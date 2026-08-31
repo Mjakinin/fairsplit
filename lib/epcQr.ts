@@ -64,10 +64,22 @@ export async function generateQrDataUrl(text: string): Promise<string> {
 }
 
 /**
- * Generates PayPal.me deep link
+ * Generates PayPal deep link supporting PayPal.Me handle or PayPal email
  */
-export function generatePayPalMeUrl(handle: string, amount: number, currency = 'EUR'): string {
-  const cleanHandle = handle.replace(/^@/, '').trim();
+export function generatePayPalMeUrl(handleOrEmail: string, amount: number, currency = 'EUR'): string {
+  const input = handleOrEmail.trim();
+  if (!input) return '';
+
+  // If user entered a full PayPal.me URL
+  const strippedUrl = input.replace(/^https?:\/\/(www\.)?paypal\.me\//i, '');
+
+  // If it's a PayPal email address
+  if (strippedUrl.includes('@') && strippedUrl.includes('.')) {
+    return `https://www.paypal.com/myaccount/transfer/homepage/send`;
+  }
+
+  // Otherwise it's a PayPal.Me handle
+  const cleanHandle = strippedUrl.replace(/^@/, '').trim();
   if (!cleanHandle) return '';
   return `https://paypal.me/${cleanHandle}/${amount.toFixed(2)}${currency}`;
 }

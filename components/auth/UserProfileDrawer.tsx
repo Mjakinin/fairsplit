@@ -123,19 +123,16 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
 
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 flex items-center justify-between">
-            <span>PayPal.me Benutzername</span>
+            <span>PayPal (Benutzername oder E-Mail)</span>
             <span className="text-gray-500 normal-case font-normal">Optional</span>
           </label>
-          <div className="relative">
-            <span className="absolute left-4 top-3 text-gray-500 text-sm">paypal.me/</span>
-            <input
-              type="text"
-              value={paypalHandle}
-              onChange={(e) => setPaypalHandle(e.target.value)}
-              placeholder="deinName"
-              className="w-full bg-dark-elevated border border-dark-border rounded-xl pl-28 pr-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
-            />
-          </div>
+          <input
+            type="text"
+            value={paypalHandle}
+            onChange={(e) => setPaypalHandle(e.target.value)}
+            placeholder="z. B. maximmjakin oder max@beispiel.de"
+            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
+          />
         </div>
 
         <div>
