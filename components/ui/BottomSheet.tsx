@@ -76,7 +76,7 @@ export function BottomSheet({
             )}
 
             {/* Content Body */}
-            <div className="p-6 overflow-y-auto flex-1 overscroll-contain">
+            <div className="p-6 overflow-y-auto flex-1 overscroll-contain no-scrollbar">
               {children}
             </div>
           </motion.div>
