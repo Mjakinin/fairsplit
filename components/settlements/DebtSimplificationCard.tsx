@@ -7,11 +7,10 @@ import { formatCurrency, formatDate } from '@/lib/utils/format';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { Avatar } from '../ui/Avatar';
 import { 
-  ArrowRight, CheckCircle2, QrCode, Sparkles, TrendingUp, TrendingDown, 
-  RotateCcw, History, CreditCard, Banknote 
+  ArrowRight, CheckCircle2, Sparkles, TrendingUp, TrendingDown, 
+  RotateCcw, History, Banknote 
 } from 'lucide-react';
 import { SettleUpModal } from './SettleUpModal';
-import { GiroCodeModal } from './GiroCodeModal';
 
 interface DebtSimplificationCardProps {
   groupId: string;
@@ -36,8 +35,6 @@ export function DebtSimplificationCard({
     payeeId: string;
     amount: number;
   } | null>(null);
-
-  const [qrTarget, setQrTarget] = useState<SimplifiedDebt | null>(null);
 
   const memberProfiles = members.map((m) => m.profile);
   const balances = calculateUserBalances(memberProfiles, expenses, settlements);
@@ -165,30 +162,19 @@ export function DebtSimplificationCard({
                       {formatCurrency(debt.amount, debt.currency)}
                     </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setQrTarget(debt)}
-                        className="p-2 rounded-xl bg-dark-elevated hover:bg-white/10 text-gray-300 border border-dark-border hover:border-white/20 transition-all active:scale-95"
-                        title="SEPA GiroCode / PayPal Link"
-                      >
-                        <QrCode className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSettleTarget({
-                            payerId: debt.fromUser.id,
-                            payeeId: debt.toUser.id,
-                            amount: debt.amount,
-                          })
-                        }
-                        className="py-1.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all active:scale-95"
-                      >
-                        Ausgleichen
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSettleTarget({
+                          payerId: debt.fromUser.id,
+                          payeeId: debt.toUser.id,
+                          amount: debt.amount,
+                        })
+                      }
+                      className="py-1.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all active:scale-95"
+                    >
+                      Ausgleichen
+                    </button>
                   </div>
                 </div>
               );
@@ -291,18 +277,6 @@ export function DebtSimplificationCard({
           initialAmount={settleTarget.amount}
           isOpen={Boolean(settleTarget)}
           onClose={() => setSettleTarget(null)}
-        />
-      )}
-
-      {/* GiroCode Modal */}
-      {qrTarget && (
-        <GiroCodeModal
-          fromUser={qrTarget.fromUser}
-          toUser={qrTarget.toUser}
-          amount={qrTarget.amount}
-          currency={qrTarget.currency}
-          isOpen={Boolean(qrTarget)}
-          onClose={() => setQrTarget(null)}
         />
       )}
     </div>

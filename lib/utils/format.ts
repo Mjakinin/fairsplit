@@ -6,6 +6,15 @@ export function formatCurrency(amount: number, currency: CurrencyCode = 'EUR'): 
     USD: '$',
     CHF: 'CHF',
     GBP: '£',
+    JPY: '¥',
+    CAD: '$ CAD',
+    AUD: '$ AUD',
+    SEK: 'kr',
+    NOK: 'kr',
+    DKK: 'kr',
+    PLN: 'zł',
+    CZK: 'Kč',
+    TRY: '₺',
   };
 
   const symbol = symbolMap[currency] || '€';

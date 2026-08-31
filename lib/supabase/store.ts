@@ -17,36 +17,31 @@ export const DEMO_PROFILES: Profile[] = [
   {
     id: 'user-demo-1',
     display_name: 'Maxim M.',
-    avatar_emoji: '😎',
+    avatar_emoji: '🦊',
     is_guest: false,
     paypal_me_handle: 'maximmjakin',
-    iban: 'DE89370400440532013000',
-    bic: 'COBADEFFXXX',
     created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
   },
   {
     id: 'user-demo-2',
     display_name: 'Linda K.',
-    avatar_emoji: '🌸',
+    avatar_emoji: '🦁',
     is_guest: false,
     paypal_me_handle: 'lindak',
-    iban: 'DE27100777770346987600',
-    bic: 'DEUTDEDBFRA',
     created_at: new Date(Date.now() - 86400000 * 25).toISOString(),
   },
   {
     id: 'user-demo-3',
     display_name: 'Jonas W.',
-    avatar_emoji: '🍕',
+    avatar_emoji: '🐼',
     is_guest: false,
     paypal_me_handle: 'jonasw',
-    iban: 'DE44500105175407324931',
     created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
   },
   {
     id: 'user-demo-4',
     display_name: 'Sarah B.',
-    avatar_emoji: '✨',
+    avatar_emoji: '🦉',
     is_guest: true,
     created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
   },
@@ -197,7 +192,7 @@ export const FairSplitStore = {
     notify();
   },
 
-  loginAsGuest(displayName: string, emoji = '🦊', paypalHandle?: string, iban?: string): Profile {
+  loginAsGuest(displayName: string, emoji = '🦊', paypalHandle?: string): Profile {
     initStore();
     const guest: Profile = {
       id: globalCurrentUser?.id || `guest-${Date.now()}`,
@@ -205,7 +200,6 @@ export const FairSplitStore = {
       avatar_emoji: emoji,
       is_guest: true,
       paypal_me_handle: paypalHandle?.replace(/^@/, '').trim() || null,
-      iban: iban?.trim() || null,
       created_at: globalCurrentUser?.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

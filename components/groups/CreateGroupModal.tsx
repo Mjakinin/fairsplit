@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { useRouter } from 'next/navigation';
-import { Users, Plus, Trash2, Sparkles, Check } from 'lucide-react';
+import { Plus, QrCode, Sparkles } from 'lucide-react';
 import { CurrencyCode } from '@/lib/types';
 
 interface CreateGroupModalProps {
@@ -14,6 +14,22 @@ interface CreateGroupModalProps {
 
 const GROUP_EMOJIS = ['🏔️', '🏡', '🍕', '✈️', '🚗', '🎉', '⛺', '🍻', '🏂', '☕', '🎮', '🛒'];
 
+export const ALL_CURRENCIES: { code: CurrencyCode; label: string; symbol: string }[] = [
+  { code: 'EUR', label: 'Euro (€ EUR)', symbol: '€' },
+  { code: 'USD', label: 'US Dollar ($ USD)', symbol: '$' },
+  { code: 'CHF', label: 'Schweizer Franken (CHF)', symbol: 'CHF' },
+  { code: 'GBP', label: 'Britisches Pfund (£ GBP)', symbol: '£' },
+  { code: 'JPY', label: 'Japanischer Yen (¥ JPY)', symbol: '¥' },
+  { code: 'CAD', label: 'Kanadischer Dollar ($ CAD)', symbol: '$' },
+  { code: 'AUD', label: 'Australischer Dollar ($ AUD)', symbol: '$' },
+  { code: 'SEK', label: 'Schwedische Krone (kr SEK)', symbol: 'kr' },
+  { code: 'NOK', label: 'Norwegische Krone (kr NOK)', symbol: 'kr' },
+  { code: 'DKK', label: 'Dänische Krone (kr DKK)', symbol: 'kr' },
+  { code: 'PLN', label: 'Polnischer Zloty (zł PLN)', symbol: 'zł' },
+  { code: 'CZK', label: 'Tschechische Krone (Kč CZK)', symbol: 'Kč' },
+  { code: 'TRY', label: 'Türkische Lira (₺ TRY)', symbol: '₺' },
+];
+
 export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
   const store = useFairSplitStore();
   const router = useRouter();
@@ -22,34 +38,16 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
   const [selectedEmoji, setSelectedEmoji] = useState('🏔️');
   const [description, setDescription] = useState('');
   const [currency, setCurrency] = useState<CurrencyCode>('EUR');
-  const [memberNames, setMemberNames] = useState<string[]>(['', '']);
-
-  const handleAddMemberField = () => {
-    setMemberNames([...memberNames, '']);
-  };
-
-  const handleMemberNameChange = (idx: number, val: string) => {
-    const updated = [...memberNames];
-    updated[idx] = val;
-    setMemberNames(updated);
-  };
-
-  const handleRemoveMemberField = (idx: number) => {
-    if (memberNames.length <= 1) return;
-    setMemberNames(memberNames.filter((_, i) => i !== idx));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const validMembers = memberNames.filter((m) => m.trim().length > 0);
-    const group = store.createGroup(name.trim(), description.trim(), selectedEmoji, currency, validMembers);
+    const group = store.createGroup(name.trim(), description.trim(), selectedEmoji, currency);
 
     onClose();
     setName('');
     setDescription('');
-    setMemberNames(['', '']);
     router.push(`/groups/${group.id}`);
   };
 
@@ -101,21 +99,22 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
           />
         </div>
 
-        {/* Description & Currency */}
+        {/* Currency & Description */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-              Währung
+              Währung (Standard: EUR)
             </label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value as any)}
               className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm font-medium"
             >
-              <option value="EUR">Euro (€ EUR)</option>
-              <option value="CHF">Schweizer Franken (CHF)</option>
-              <option value="USD">US Dollar ($ USD)</option>
-              <option value="GBP">Britisches Pfund (£ GBP)</option>
+              {ALL_CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -132,48 +131,17 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
           </div>
         </div>
 
-        {/* Initial Friends / Members */}
-        <div className="p-4 bg-dark-elevated rounded-2xl border border-dark-border space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-emerald-400" />
-              <span>Mitglieder direkt hinzufügen</span>
-            </label>
-            <button
-              type="button"
-              onClick={handleAddMemberField}
-              className="text-xs text-emerald-400 hover:underline font-semibold flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Person</span>
-            </button>
+        {/* Invite Info Box */}
+        <div className="p-4 bg-dark-elevated rounded-2xl border border-dark-border flex items-start gap-3 text-xs text-gray-300">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <QrCode className="w-4 h-4" />
           </div>
-
-          <div className="space-y-2">
-            {memberNames.map((mName, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder={`Freund ${idx + 1} (z. B. Linda, Jonas)`}
-                  value={mName}
-                  onChange={(e) => handleMemberNameChange(idx, e.target.value)}
-                  className="flex-1 bg-dark-card border border-dark-border rounded-xl px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
-                />
-                {memberNames.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveMemberField(idx)}
-                    className="p-2 text-gray-500 hover:text-rose-400 rounded-lg hover:bg-white/5"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            ))}
+          <div className="space-y-1">
+            <div className="font-bold text-white">Beitritt per Link & QR-Code</div>
+            <p className="text-gray-400 leading-relaxed">
+              Freunde treten nach der Erstellung einfach über den teilbaren Einladungs-Link oder scannbaren QR-Code bei und wählen dabei ihren eigenen Namen & Tier-Avatar.
+            </p>
           </div>
-          <p className="text-[11px] text-gray-400">
-            Du kannst später auch jederzeit Personen per Einladungs-Link oder QR-Code beitreten lassen.
-          </p>
         </div>
 
         <div className="pt-2">

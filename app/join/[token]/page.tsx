@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { Avatar } from '@/components/ui/Avatar';
-import { Users, Split, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
+import { Users, Split, ArrowRight, CheckCircle2, Sparkles, UserCheck } from 'lucide-react';
+import { ANIMAL_EMOJIS } from '@/components/auth/WelcomeModal';
 
 export default function JoinGroupPage() {
   const params = useParams();
@@ -16,7 +17,9 @@ export default function JoinGroupPage() {
   const group = store.getGroupByInviteToken(token);
   const currentUser = store.getCurrentUser();
 
-  const [guestName, setGuestName] = useState(currentUser.is_guest ? currentUser.display_name : '');
+  const isNewGuest = currentUser.display_name === 'Ich';
+  const [guestName, setGuestName] = useState(isNewGuest ? '' : currentUser.display_name);
+  const [selectedEmoji, setSelectedEmoji] = useState(currentUser.avatar_emoji || '🦊');
   const [joined, setJoined] = useState(false);
 
   if (!group) {
@@ -40,8 +43,12 @@ export default function JoinGroupPage() {
     e.preventDefault();
     let userToJoin = currentUser;
 
-    if (currentUser.is_guest && guestName.trim() && guestName !== currentUser.display_name) {
-      userToJoin = store.updateProfile({ display_name: guestName.trim() });
+    const finalName = guestName.trim() || currentUser.display_name;
+    if (finalName && (finalName !== currentUser.display_name || selectedEmoji !== currentUser.avatar_emoji)) {
+      userToJoin = store.updateProfile({
+        display_name: finalName,
+        avatar_emoji: selectedEmoji,
+      });
     }
 
     store.joinGroup(group.id, userToJoin);
@@ -52,23 +59,25 @@ export default function JoinGroupPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-12">
+    <div className="max-w-md mx-auto px-4 py-8 sm:py-12">
       <div className="p-6 sm:p-8 bg-dark-card border border-dark-border rounded-3xl shadow-2xl space-y-6 text-center">
-        {/* Brand Icon */}
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white mx-auto shadow-xl shadow-emerald-950/60">
-          <Split className="w-8 h-8 -rotate-45" />
-        </div>
-
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-            Gruppeneinladung
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
-            {group.name}
-          </h1>
-          {group.description && (
-            <p className="text-sm text-gray-400 mt-1">{group.description}</p>
-          )}
+        {/* Large Group & Avatar Preview */}
+        <div className="flex flex-col items-center justify-center space-y-3">
+          <div className="w-20 h-20 rounded-3xl bg-dark-elevated border-2 border-emerald-500/50 flex items-center justify-center text-4xl shadow-xl shadow-emerald-950/50">
+            <span>{selectedEmoji}</span>
+          </div>
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+              Einladung zur Gruppe
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center justify-center gap-2">
+              <span>{group.emoji || '💰'}</span>
+              <span>{group.name}</span>
+            </h1>
+            {group.description && (
+              <p className="text-xs sm:text-sm text-gray-400 mt-1">{group.description}</p>
+            )}
+          </div>
         </div>
 
         {/* Existing Members */}
@@ -81,31 +90,56 @@ export default function JoinGroupPage() {
             {group.members?.map((m) => (
               <span
                 key={m.user_id}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-dark-card border border-dark-border text-xs text-gray-200"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-card border border-dark-border text-xs text-gray-200"
               >
-                <Avatar name={m.profile.display_name} size="sm" className="w-4 h-4 text-[9px]" />
+                <Avatar name={m.profile.display_name} avatarEmoji={m.profile.avatar_emoji} size="sm" className="w-4 h-4 text-[9px]" />
                 <span>{m.profile.display_name}</span>
               </span>
             ))}
           </div>
         </div>
 
-        {/* Join Form */}
+        {/* Join / Registration Form */}
         <form onSubmit={handleJoin} className="space-y-4 text-left">
-          {currentUser.is_guest && (
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                Dein Name in dieser Gruppe
-              </label>
-              <input
-                type="text"
-                required
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder="z. B. Alex, David oder Julia"
-                className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 font-medium"
-              />
-            </div>
+          {(!isAlreadyMember || isNewGuest) && (
+            <>
+              {/* Animal Emoji Picker */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 text-center">
+                  Wähle deinen Tier-Avatar
+                </label>
+                <div className="flex flex-wrap justify-center gap-1 max-h-28 overflow-y-auto p-1.5 bg-dark-elevated rounded-2xl border border-dark-border/60">
+                  {ANIMAL_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setSelectedEmoji(emoji)}
+                      className={`w-8 h-8 rounded-xl text-lg flex items-center justify-center border transition-all ${
+                        selectedEmoji === emoji
+                          ? 'bg-emerald-500/25 border-emerald-500 scale-105'
+                          : 'bg-dark-card border-dark-border/60 text-gray-300'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
+                  Dein Name in dieser Gruppe *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="z. B. Alex, David oder Julia"
+                  className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 font-semibold text-sm"
+                />
+              </div>
+            </>
           )}
 
           <button
@@ -124,7 +158,7 @@ export default function JoinGroupPage() {
               </>
             ) : (
               <>
-                <span>Gruppe sofort beitreten</span>
+                <span>Gruppe jetzt beitreten</span>
                 <ArrowRight className="w-5 h-5" />
               </>
             )}

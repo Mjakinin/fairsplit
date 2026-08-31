@@ -6,18 +6,20 @@ import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { Avatar } from '../ui/Avatar';
 import { useRouter } from 'next/navigation';
-import { Settings, Users, UserPlus, Trash2, Check, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Settings, Users, QrCode, Trash2, Check, UserMinus } from 'lucide-react';
+import { ALL_CURRENCIES } from './CreateGroupModal';
 
 interface GroupSettingsModalProps {
   group: Group;
   members: GroupMember[];
   isOpen: boolean;
   onClose: () => void;
+  onOpenInvite?: () => void;
 }
 
 const GROUP_EMOJIS = ['🏔️', '🏡', '🍕', '✈️', '🚗', '🎉', '⛺', '🍻', '🏂', '☕', '🎮', '🛒'];
 
-export function GroupSettingsModal({ group, members, isOpen, onClose }: GroupSettingsModalProps) {
+export function GroupSettingsModal({ group, members, isOpen, onClose, onOpenInvite }: GroupSettingsModalProps) {
   const store = useFairSplitStore();
   const router = useRouter();
   const currentUser = store.getCurrentUser();
@@ -26,7 +28,6 @@ export function GroupSettingsModal({ group, members, isOpen, onClose }: GroupSet
   const [emoji, setEmoji] = useState(group.emoji || '🏔️');
   const [description, setDescription] = useState(group.description || '');
   const [currency, setCurrency] = useState<CurrencyCode>(group.currency);
-  const [newMemberName, setNewMemberName] = useState('');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -54,13 +55,6 @@ export function GroupSettingsModal({ group, members, isOpen, onClose }: GroupSet
       setSaved(false);
       onClose();
     }, 500);
-  };
-
-  const handleAddMember = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMemberName.trim()) return;
-    store.addMemberToGroup(group.id, newMemberName.trim());
-    setNewMemberName('');
   };
 
   const handleRemoveMember = (userId: string, memberName: string) => {
@@ -133,10 +127,11 @@ export function GroupSettingsModal({ group, members, isOpen, onClose }: GroupSet
                 onChange={(e) => setCurrency(e.target.value as any)}
                 className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm"
               >
-                <option value="EUR">Euro (€ EUR)</option>
-                <option value="CHF">Schweizer Franken (CHF)</option>
-                <option value="USD">US Dollar ($ USD)</option>
-                <option value="GBP">Britisches Pfund (£ GBP)</option>
+                {ALL_CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -162,13 +157,27 @@ export function GroupSettingsModal({ group, members, isOpen, onClose }: GroupSet
           </button>
         </form>
 
-        {/* Members Management */}
+        {/* Members Management & Invite Action */}
         <div className="p-4 bg-dark-elevated rounded-2xl border border-dark-border space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
               <Users className="w-4 h-4 text-emerald-400" />
               <span>Mitglieder ({members.length})</span>
             </h4>
+
+            {onOpenInvite && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenInvite();
+                }}
+                className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                <span>Link & QR</span>
+              </button>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -195,10 +204,10 @@ export function GroupSettingsModal({ group, members, isOpen, onClose }: GroupSet
                     <button
                       type="button"
                       onClick={() => handleRemoveMember(m.user_id, m.profile.display_name)}
-                      className="p-1.5 text-gray-500 hover:text-rose-400 rounded-lg hover:bg-white/5"
+                      className="p-1.5 text-gray-500 hover:text-rose-400 rounded-lg hover:bg-white/5 transition-colors"
                       title="Mitglied entfernen"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <UserMinus className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -206,23 +215,22 @@ export function GroupSettingsModal({ group, members, isOpen, onClose }: GroupSet
             })}
           </div>
 
-          {/* Add member input */}
-          <form onSubmit={handleAddMember} className="flex gap-2 pt-2 border-t border-dark-border/50">
-            <input
-              type="text"
-              placeholder="Name des neuen Mitglieds"
-              value={newMemberName}
-              onChange={(e) => setNewMemberName(e.target.value)}
-              className="flex-1 bg-dark-card border border-dark-border rounded-xl px-3 py-2 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
-            />
-            <button
-              type="submit"
-              className="py-2 px-3 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center gap-1"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Hinzufügen</span>
-            </button>
-          </form>
+          {/* Direct Invite Button */}
+          {onOpenInvite && (
+            <div className="pt-2 border-t border-dark-border/50">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenInvite();
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-dark-card hover:bg-emerald-950/20 border border-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition-all"
+              >
+                <QrCode className="w-4 h-4" />
+                <span>Weitere Freunde per Einladungs-Link / QR einladen</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Danger Zone */}

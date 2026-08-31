@@ -1,9 +1,22 @@
-export type CurrencyCode = 'EUR' | 'CHF' | 'USD' | 'GBP';
+export type CurrencyCode = 
+  | 'EUR' 
+  | 'USD' 
+  | 'CHF' 
+  | 'GBP' 
+  | 'JPY' 
+  | 'CAD' 
+  | 'AUD' 
+  | 'SEK' 
+  | 'NOK' 
+  | 'DKK' 
+  | 'PLN' 
+  | 'CZK' 
+  | 'TRY';
 
 export type SplitMode = 'equal' | 'exact' | 'percentage' | 'shares' | 'itemized';
 export type TipType = 'fixed' | 'percentage';
 export type SurchargeSplitMode = 'proportional' | 'equal';
-export type PaymentMethod = 'paypal' | 'sepa' | 'cash' | 'revolut' | 'other';
+export type PaymentMethod = 'paypal' | 'cash' | 'transfer' | 'other';
 
 export type ExpenseCategory = 
   | 'restaurant' 
@@ -25,8 +38,6 @@ export interface Profile {
   avatar_emoji?: string | null;
   is_guest: boolean;
   paypal_me_handle?: string | null;
-  iban?: string | null;
-  bic?: string | null;
   created_at: string;
   updated_at?: string;
 }

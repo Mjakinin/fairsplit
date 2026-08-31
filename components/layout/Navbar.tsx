@@ -3,16 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { Avatar } from '../ui/Avatar';
 import { UserProfileDrawer } from '../auth/UserProfileDrawer';
 import { AuthModal } from '../auth/AuthModal';
-import { Split, Sparkles, User, RefreshCw } from 'lucide-react';
+import { Split } from 'lucide-react';
 
 export function Navbar() {
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
   const [profileOpen, setProfileOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+
+  const animalEmoji = currentUser.avatar_emoji || '🦊';
 
   return (
     <>
@@ -33,14 +34,17 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* User Profile Button */}
+          {/* User Account / Animal Avatar Button */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setProfileOpen(true)}
-              className="flex items-center gap-2.5 py-1.5 px-3 rounded-full bg-dark-card hover:bg-dark-elevated border border-dark-border hover:border-white/20 transition-all active:scale-95"
+              className="flex items-center gap-2 py-1.5 pl-2 pr-3 rounded-full bg-dark-card hover:bg-dark-elevated border border-dark-border hover:border-emerald-500/40 shadow-sm transition-all active:scale-95 group"
+              title="Profil & Einstellungen"
             >
-              <Avatar name={currentUser.display_name} size="sm" />
-              <span className="text-xs font-semibold text-white max-w-[120px] truncate hidden sm:inline">
+              <div className="w-7 h-7 rounded-full bg-dark-elevated border border-white/10 flex items-center justify-center text-base shadow-sm group-hover:scale-110 transition-transform">
+                <span>{animalEmoji}</span>
+              </div>
+              <span className="text-xs font-semibold text-white max-w-[120px] truncate">
                 {currentUser.display_name}
               </span>
             </button>

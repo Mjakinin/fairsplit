@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { Avatar } from '../ui/Avatar';
-import { Check, Trash2, Database } from 'lucide-react';
+import { Check, Trash2, Database, ShieldCheck } from 'lucide-react';
 import { ANIMAL_EMOJIS } from './WelcomeModal';
 
 interface UserProfileDrawerProps {
@@ -19,8 +18,6 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   const [displayName, setDisplayName] = useState(currentUser.display_name);
   const [selectedEmoji, setSelectedEmoji] = useState(currentUser.avatar_emoji || '🦊');
   const [paypalHandle, setPaypalHandle] = useState(currentUser.paypal_me_handle || '');
-  const [iban, setIban] = useState(currentUser.iban || '');
-  const [bic, setBic] = useState(currentUser.bic || '');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -28,8 +25,6 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
       setDisplayName(currentUser.display_name);
       setSelectedEmoji(currentUser.avatar_emoji || '🦊');
       setPaypalHandle(currentUser.paypal_me_handle || '');
-      setIban(currentUser.iban || '');
-      setBic(currentUser.bic || '');
     }
   }, [isOpen, currentUser]);
 
@@ -39,8 +34,6 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
       display_name: displayName.trim() || 'Ich',
       avatar_emoji: selectedEmoji,
       paypal_me_handle: paypalHandle.replace(/^@/, '').trim() || null,
-      iban: iban.trim() || null,
-      bic: bic.trim() || null,
     });
     setSaved(true);
     setTimeout(() => {
@@ -50,7 +43,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   };
 
   const handleLoadDemoData = () => {
-    if (confirm('Möchtest du die Beispieldaten (Alpen-Wochenende mit 4 Mitgliedern & Beleg) laden?')) {
+    if (confirm('Möchtest du die Beispieldaten (Alpen-Wochenende mit Mitgliedern & Beleg) laden?')) {
       store.loadDemoSeedData();
       onClose();
     }
@@ -67,8 +60,8 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
-      title="Dein Profil & Zahlungsdaten"
-      subtitle="Für automatische 1-Klick Rückzahlungen & GiroCodes"
+      title="Dein Profil"
+      subtitle="Name, Tier-Avatar & Einstellungen"
       maxHeight="max-h-[92vh]"
     >
       <form onSubmit={handleSave} className="space-y-4 py-2">
@@ -80,7 +73,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
           <div className="flex-1 min-w-0">
             <div className="font-bold text-white text-base truncate">{displayName}</div>
             <div className="text-xs text-emerald-400 font-medium">
-              {currentUser.is_guest ? 'Gast-Konto (Lokal aktiv)' : currentUser.email || 'Registrierter Nutzer'}
+              {currentUser.is_guest ? 'Lokal aktiv (Passwortlos)' : currentUser.email || 'Registrierter Nutzer'}
             </div>
           </div>
         </div>
@@ -133,34 +126,9 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
             placeholder="z. B. maximmjakin oder max@beispiel.de"
             className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
           />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 flex items-center justify-between">
-            <span>Bank-IBAN (Für SEPA GiroCode QR)</span>
-            <span className="text-gray-500 normal-case font-normal">Optional</span>
-          </label>
-          <input
-            type="text"
-            value={iban}
-            onChange={(e) => setIban(e.target.value)}
-            placeholder="DE89 3704 0044 0532 0130 00"
-            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-2.5 text-white font-mono placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 flex items-center justify-between">
-            <span>BIC</span>
-            <span className="text-gray-500 normal-case font-normal">Optional</span>
-          </label>
-          <input
-            type="text"
-            value={bic}
-            onChange={(e) => setBic(e.target.value)}
-            placeholder="COBADEFFXXX"
-            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-2.5 text-white font-mono placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
-          />
+          <p className="text-[11px] text-gray-500 mt-1">
+            Wird für den 1-Klick Ausgleichs-Link genutzt (z. B. <code>paypal.me/name</code>).
+          </p>
         </div>
 
         <button

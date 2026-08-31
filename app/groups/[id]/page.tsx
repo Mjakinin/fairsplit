@@ -16,7 +16,7 @@ import { GroupAnalyticsModal } from '@/components/groups/GroupAnalyticsModal';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { 
   Receipt, Scale, History, Plus, QrCode, ArrowLeft, 
-  Users, UserPlus, Sparkles, Settings, BarChart3 
+  Users, UserPlus, Sparkles, Settings, BarChart3, Share2 
 } from 'lucide-react';
 
 export default function GroupDetailPage() {
@@ -33,9 +33,6 @@ export default function GroupDetailPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
-
-  const [newMemberName, setNewMemberName] = useState('');
-  const [showAddMemberInput, setShowAddMemberInput] = useState(false);
 
   if (!group) {
     return (
@@ -57,14 +54,6 @@ export default function GroupDetailPage() {
   const expenses = store.getGroupExpenses(groupId);
   const settlements = store.getGroupSettlements(groupId);
   const activityLogs = store.getGroupActivity(groupId);
-
-  const handleAddQuickMember = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMemberName.trim()) return;
-    store.addMemberToGroup(groupId, newMemberName.trim());
-    setNewMemberName('');
-    setShowAddMemberInput(false);
-  };
 
   const tabs = [
     {
@@ -91,28 +80,28 @@ export default function GroupDetailPage() {
       {/* Group Header Card */}
       <div className="p-5 sm:p-6 bg-dark-card border border-dark-border rounded-3xl shadow-xl space-y-4">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/"
-              className="p-2 -ml-1 text-gray-400 hover:text-white rounded-xl hover:bg-white/5 active:scale-95 transition-all"
+              className="p-2 -ml-1 text-gray-400 hover:text-white rounded-xl hover:bg-white/5 active:scale-95 transition-all flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-2xl">{group.emoji || '💰'}</span>
-                <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                <span className="text-2xl flex-shrink-0">{group.emoji || '💰'}</span>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight truncate">
                   {group.name}
                 </h1>
               </div>
               {group.description && (
-                <p className="text-xs sm:text-sm text-gray-400 mt-0.5">{group.description}</p>
+                <p className="text-xs sm:text-sm text-gray-400 mt-0.5 truncate">{group.description}</p>
               )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <button
               onClick={() => setAnalyticsOpen(true)}
               className="p-2.5 rounded-xl bg-dark-elevated hover:bg-white/10 text-gray-300 border border-dark-border hover:border-white/20 transition-all active:scale-95"
@@ -134,7 +123,7 @@ export default function GroupDetailPage() {
               className="p-2.5 rounded-xl bg-dark-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/30 transition-all active:scale-95"
               title="QR-Code & Einladungslink"
             >
-              <QrCode className="w-4 h-4" />
+              <QrCode className="w-5 h-5" />
             </button>
 
             <button
@@ -148,7 +137,7 @@ export default function GroupDetailPage() {
           </div>
         </div>
 
-        {/* Member Avatars & Add Member inline */}
+        {/* Member Avatars & Invite Link */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-dark-border/50 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-gray-400 font-semibold flex items-center gap-1 mr-1">
@@ -166,39 +155,13 @@ export default function GroupDetailPage() {
             ))}
           </div>
 
-          {showAddMemberInput ? (
-            <form onSubmit={handleAddQuickMember} className="flex items-center gap-1.5">
-              <input
-                type="text"
-                autoFocus
-                placeholder="Name eingeben"
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-                className="bg-dark-elevated border border-dark-border rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-emerald-500"
-              />
-              <button
-                type="submit"
-                className="py-1 px-2.5 rounded-lg bg-emerald-600 text-white font-bold text-xs"
-              >
-                Hinzufügen
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddMemberInput(false)}
-                className="py-1 px-2 rounded-lg text-gray-400 hover:text-white text-xs"
-              >
-                ✕
-              </button>
-            </form>
-          ) : (
-            <button
-              onClick={() => setShowAddMemberInput(true)}
-              className="text-emerald-400 hover:underline font-semibold flex items-center gap-1"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Person hinzufügen</span>
-            </button>
-          )}
+          <button
+            onClick={() => setInviteOpen(true)}
+            className="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 transition-all active:scale-95"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Freunde per Link / QR einladen</span>
+          </button>
         </div>
       </div>
 
@@ -246,6 +209,7 @@ export default function GroupDetailPage() {
         members={members}
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        onOpenInvite={() => setInviteOpen(true)}
       />
 
       <GroupAnalyticsModal
