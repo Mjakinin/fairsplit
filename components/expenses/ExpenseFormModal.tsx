@@ -999,6 +999,13 @@ export function ExpenseFormModal({
                         </button>
                       );
                     })}
+
+                    {/* Live per-person calculation badge */}
+                    {item.assignments.length > 0 && (item.price || 0) > 0 && (
+                      <span className="text-[10px] font-bold font-mono text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-500/30 ml-auto">
+                        je {formatCurrency(((item.quantity || 1) * item.price) / item.assignments.length, currency)}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}

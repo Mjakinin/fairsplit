@@ -107,26 +107,51 @@ export function ExpenseDetailModal({ expense, members, isOpen, onClose }: Expens
               </h4>
               <div className="space-y-2.5">
                 {expense.items.map((item) => (
-                  <div key={item.id} className="p-3 bg-dark-card rounded-xl border border-dark-border/60">
+                  <div key={item.id} className="p-3.5 bg-dark-card rounded-2xl border border-dark-border/80 shadow-sm space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-white">{item.name}</span>
-                      <span className="font-semibold text-white">
-                        {formatCurrency(item.price * item.quantity, expense.currency)}
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-white">{item.name}</span>
+                        {(item.quantity || 1) > 1 && (
+                          <span className="text-xs text-gray-400 font-mono">
+                            ({item.quantity}x {formatCurrency(item.price, expense.currency)})
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-bold text-white font-mono">
+                        {formatCurrency(item.price * (item.quantity || 1), expense.currency)}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {item.assignments.map((a) => {
-                        const profile = memberMap.get(a.user_id) || a.profile;
-                        return (
-                          <span
-                            key={a.user_id}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-gray-300 text-xs"
-                          >
-                            <Avatar name={profile?.display_name || 'U'} avatarEmoji={profile?.avatar_emoji} size="sm" className="w-4 h-4 text-[10px]" />
-                            {profile?.display_name || 'Mitglied'}
+
+                    {/* Member Shares Breakdown */}
+                    <div className="pt-2 border-t border-dark-border/40 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] text-gray-400">
+                        <span>Aufgeteilt auf {item.assignments.length} {item.assignments.length === 1 ? 'Person' : 'Personen'}:</span>
+                        {item.assignments.length > 0 && (
+                          <span className="text-emerald-400 font-bold font-mono">
+                            je {formatCurrency((item.price * (item.quantity || 1)) / (item.assignments.length || 1), expense.currency)}
                           </span>
-                        );
-                      })}
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.assignments.map((a) => {
+                          const profile = memberMap.get(a.user_id) || a.profile;
+                          const totalShares = item.assignments.reduce((sum, assign) => sum + (assign.share_count || 1), 0);
+                          const userShare = ((a.share_count || 1) / (totalShares || 1)) * (item.price * (item.quantity || 1));
+                          return (
+                            <div
+                              key={a.user_id}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-dark-elevated border border-dark-border/60 text-xs shadow-sm hover:border-emerald-500/40 transition-colors"
+                            >
+                              <Avatar name={profile?.display_name || 'U'} avatarEmoji={profile?.avatar_emoji} size="sm" className="w-4 h-4 text-[10px]" />
+                              <span className="text-gray-300 font-medium">{profile?.display_name || 'Mitglied'}:</span>
+                              <span className="font-bold text-emerald-400 font-mono">
+                                {formatCurrency(userShare, expense.currency)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 ))}
