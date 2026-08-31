@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { calculateUserBalances } from '@/lib/algorithms/debtSimplification';
 import { formatCurrency } from '@/lib/utils/format';
@@ -11,11 +12,13 @@ import { WelcomeModal } from '@/components/auth/WelcomeModal';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { 
   Users, Plus, ArrowUpRight, Receipt, Sparkles, ShieldCheck, 
-  ChevronRight, QrCode, TrendingUp, TrendingDown, CheckCircle2, 
-  Database, UserCheck 
+  ChevronRight, QrCode, TrendingUp, CheckCircle2, 
+  Database, Camera, ArrowRight, Wallet, UserPlus, Lightbulb
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 export default function HomePage() {
+  const router = useRouter();
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
   const groups = store.getGroups();
@@ -44,6 +47,14 @@ export default function HomePage() {
 
   const handleLoadDemo = () => {
     store.loadDemoSeedData();
+    try {
+      confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+    } catch {}
+    // Navigate into the demo group after short timeout
+    const updatedGroups = store.getGroups();
+    if (updatedGroups.length > 0) {
+      router.push(`/groups/${updatedGroups[0].id}`);
+    }
   };
 
   return (
@@ -68,7 +79,7 @@ export default function HomePage() {
               {totalNet > 0 ? `+${formatCurrency(totalNet)}` : formatCurrency(totalNet)}
             </div>
             <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 mt-2">
-              <span>Angemeldet als</span>
+              <span>Eingeloggt als</span>
               <span className="text-white font-bold inline-flex items-center gap-1.5 bg-dark-card px-2.5 py-1 rounded-lg border border-dark-border">
                 <span>{currentUser.avatar_emoji || '👤'}</span>
                 <span>{currentUser.display_name}</span>
@@ -88,38 +99,84 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Onboarding: "So einfach geht's in 3 Schritten" (Especially great for new users) */}
+      {groups.length === 0 && (
+        <div className="p-6 sm:p-7 bg-dark-card border border-dark-border rounded-3xl space-y-4 shadow-lg">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-emerald-500/15 rounded-lg text-emerald-400">
+              <Lightbulb className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+              So einfach funktioniert FairSplit
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+            <div className="p-4 bg-dark-elevated rounded-2xl border border-dark-border/60 space-y-2 relative">
+              <div className="w-8 h-8 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-extrabold text-sm border border-emerald-500/30">
+                1
+              </div>
+              <div className="font-bold text-white text-sm">Gruppe erstellen</div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Lege eine Gruppe für euren Urlaub, die WG oder das Abendessen an.
+              </p>
+            </div>
+
+            <div className="p-4 bg-dark-elevated rounded-2xl border border-dark-border/60 space-y-2 relative">
+              <div className="w-8 h-8 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-extrabold text-sm border border-blue-500/30">
+                2
+              </div>
+              <div className="font-bold text-white text-sm">Freunde einladen</div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Teile den Einladungslink oder QR-Code – Freunde sind sofort ohne App-Download dabei.
+              </p>
+            </div>
+
+            <div className="p-4 bg-dark-elevated rounded-2xl border border-dark-border/60 space-y-2 relative">
+              <div className="w-8 h-8 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center font-extrabold text-sm border border-purple-500/30">
+                3
+              </div>
+              <div className="font-bold text-white text-sm">Ausgaben teilen</div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Belege per Foto scannen oder Beträge eingeben. FairSplit errechnet minimale Ausgleiche!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Feature Highlights Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-4 bg-dark-card border border-dark-border rounded-2xl">
-          <div className="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center mb-2">
-            <Receipt className="w-4 h-4" />
+        <div className="p-4 bg-dark-card border border-dark-border rounded-2xl hover:border-dark-border/80 transition-all">
+          <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center mb-2.5">
+            <Camera className="w-4 h-4" />
           </div>
-          <div className="font-bold text-white text-xs sm:text-sm">Beleg-Splitter</div>
-          <div className="text-[11px] text-gray-400 mt-0.5">Einzelposten & Trinkgeld</div>
+          <div className="font-bold text-white text-xs sm:text-sm">KI-Beleg-Scanner</div>
+          <div className="text-[11px] text-gray-400 mt-0.5">Foto machen & Posten automatisch aufteilen</div>
         </div>
 
-        <div className="p-4 bg-dark-card border border-dark-border rounded-2xl">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-2">
+        <div className="p-4 bg-dark-card border border-dark-border rounded-2xl hover:border-dark-border/80 transition-all">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-2.5">
             <Sparkles className="w-4 h-4" />
           </div>
           <div className="font-bold text-white text-xs sm:text-sm">Min-Cash-Flow</div>
-          <div className="text-[11px] text-gray-400 mt-0.5">Minimale Überweisungen</div>
+          <div className="text-[11px] text-gray-400 mt-0.5">Minimiert unnötige Hin- und Her-Zahlungen</div>
         </div>
 
-        <div className="p-4 bg-dark-card border border-dark-border rounded-2xl">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center mb-2">
+        <div className="p-4 bg-dark-card border border-dark-border rounded-2xl hover:border-dark-border/80 transition-all">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center mb-2.5">
             <QrCode className="w-4 h-4" />
           </div>
-          <div className="font-bold text-white text-xs sm:text-sm">SEPA GiroCode</div>
-          <div className="text-[11px] text-gray-400 mt-0.5">Banking EPC-QR & PayPal</div>
+          <div className="font-bold text-white text-xs sm:text-sm">PayPal & GiroCode</div>
+          <div className="text-[11px] text-gray-400 mt-0.5">1-Klick Ausgleich per Banking-App oder PayPal</div>
         </div>
 
-        <div className="p-4 bg-dark-card border border-dark-border rounded-2xl">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center mb-2">
+        <div className="p-4 bg-dark-card border border-dark-border rounded-2xl hover:border-dark-border/80 transition-all">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center mb-2.5">
             <ShieldCheck className="w-4 h-4" />
           </div>
-          <div className="font-bold text-white text-xs sm:text-sm">Passwortlos</div>
-          <div className="text-[11px] text-gray-400 mt-0.5">Passkeys & Sofort-Gast</div>
+          <div className="font-bold text-white text-xs sm:text-sm">Sicher & Privat</div>
+          <div className="text-[11px] text-gray-400 mt-0.5">Kein Passwort-Stress – Code direkt per Mail</div>
         </div>
       </div>
 
@@ -150,7 +207,7 @@ export default function HomePage() {
             <div className="space-y-1.5 max-w-sm mx-auto">
               <h3 className="text-xl font-bold text-white">Noch keine Gruppen vorhanden</h3>
               <p className="text-xs sm:text-sm text-gray-400">
-                Erstelle deine erste Gruppe für den nächsten Urlaub, eure WG, ein Restaurant-Essen oder teste die App direkt.
+                Starte deine eigene Gruppe oder sieh dir die interaktive Demo an, um alle Funktionen direkt auszuprobieren.
               </p>
             </div>
 
@@ -167,10 +224,10 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleLoadDemo}
-                className="w-full sm:w-auto py-3 px-4 rounded-2xl bg-dark-elevated hover:bg-white/5 border border-dark-border text-gray-300 font-semibold text-xs flex items-center justify-center gap-2 transition-all"
+                className="w-full sm:w-auto py-3.5 px-5 rounded-2xl bg-dark-elevated hover:bg-white/10 border border-dark-border text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
               >
-                <Database className="w-3.5 h-3.5 text-purple-400" />
-                <span>Beispieldaten laden</span>
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span>✨ Interaktive Demo ansehen</span>
               </button>
             </div>
           </div>

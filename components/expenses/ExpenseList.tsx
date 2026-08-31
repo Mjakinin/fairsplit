@@ -6,7 +6,7 @@ import { formatCurrency, formatDate } from '@/lib/utils/format';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { 
   Utensils, ShoppingCart, Car, Building2, Ticket, Receipt, 
-  ChevronRight, FileText, Search, Coffee, Zap, Filter 
+  ChevronRight, FileText, Search, Coffee, Zap, Filter, Plus 
 } from 'lucide-react';
 import { ExpenseDetailModal } from './ExpenseDetailModal';
 import { Badge } from '../ui/Badge';
@@ -14,9 +14,10 @@ import { Badge } from '../ui/Badge';
 interface ExpenseListProps {
   expenses: Expense[];
   members: GroupMember[];
+  onAddExpense?: () => void;
 }
 
-export function ExpenseList({ expenses, members }: ExpenseListProps) {
+export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProps) {
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
@@ -49,14 +50,26 @@ export function ExpenseList({ expenses, members }: ExpenseListProps) {
 
   if (expenses.length === 0) {
     return (
-      <div className="text-center py-12 px-4 bg-dark-card border border-dark-border rounded-3xl">
-        <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4 text-emerald-400 border border-white/10">
+      <div className="text-center py-10 px-4 bg-dark-card border border-dark-border rounded-3xl space-y-4 shadow-lg">
+        <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto text-emerald-400 border border-emerald-500/20 shadow-inner">
           <Receipt className="w-8 h-8" />
         </div>
-        <h3 className="text-lg font-bold text-white">Noch keine Ausgaben erfasst</h3>
-        <p className="text-xs sm:text-sm text-gray-400 max-w-sm mx-auto mt-1">
-          Tippe auf <strong>+ Ausgabe erfassen</strong>, um die erste Rechnung aufzuteilen – egal ob Schnell-Split oder Beleg mit Einzelposten!
-        </p>
+        <div className="space-y-1">
+          <h3 className="text-lg font-bold text-white">Noch keine Ausgaben erfasst</h3>
+          <p className="text-xs sm:text-sm text-gray-400 max-w-sm mx-auto">
+            Trage eure erste gemeinsame Rechnung ein oder scanne einen Beleg per Foto.
+          </p>
+        </div>
+        {onAddExpense && (
+          <button
+            type="button"
+            onClick={onAddExpense}
+            className="py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-emerald-950/50 inline-flex items-center gap-2 transition-all active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Erste Ausgabe erfassen</span>
+          </button>
+        )}
       </div>
     );
   }

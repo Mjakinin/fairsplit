@@ -171,7 +171,11 @@ export default function GroupDetailPage() {
       {/* Tab Content */}
       <div className="pt-1">
         {activeTab === 'expenses' && (
-          <ExpenseList expenses={expenses} members={members} />
+          <ExpenseList
+            expenses={expenses}
+            members={members}
+            onAddExpense={() => setAddExpenseOpen(true)}
+          />
         )}
 
         {activeTab === 'balances' && (
