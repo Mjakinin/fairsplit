@@ -16,20 +16,39 @@ export default function AdminDashboardPage() {
   const [adminPin, setAdminPin] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [verifying, setVerifying] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'users' | 'groups' | 'expenses' | 'backup'>('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Simple Admin PIN Protection (Can also be set in .env)
-  const handleAdminLogin = (e: React.FormEvent) => {
+  // Server-Side Verification against ADMIN_PASSWORD env var
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPin === 'admin2026' || adminPin === 'admin' || adminPin === '1234') {
-      setIsAuthenticated(true);
-      setAuthError('');
-    } else {
-      setAuthError('Falscher Admin-PIN / Passwort.');
+    setAuthError('');
+    setVerifying(true);
+
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPin }),
+      });
+      const data = await res.json();
+      setVerifying(false);
+
+      if (data.success) {
+        setIsAuthenticated(true);
+        try {
+          sessionStorage.setItem('fairsplit_admin_session', data.token);
+        } catch {}
+      } else {
+        setAuthError(data.error || 'Falsches Admin-Passwort.');
+      }
+    } catch {
+      setVerifying(false);
+      setAuthError('Verbindungsfehler zum Server.');
     }
   };
 

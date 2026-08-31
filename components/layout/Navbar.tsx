@@ -1,18 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { UserProfileDrawer } from '../auth/UserProfileDrawer';
 import { AuthModal } from '../auth/AuthModal';
-import { Split, LogIn, User } from 'lucide-react';
+import { Split, LogIn } from 'lucide-react';
 
 export function Navbar() {
+  const router = useRouter();
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
   const isAuthenticated = store.isAuthenticated();
   const [profileOpen, setProfileOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+
+  // Stealth 5-Click Admin Easter Egg
+  const clickCountRef = useRef(0);
+  const lastClickTimeRef = useRef(0);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    const now = Date.now();
+    if (now - lastClickTimeRef.current < 600) {
+      clickCountRef.current += 1;
+    } else {
+      clickCountRef.current = 1;
+    }
+    lastClickTimeRef.current = now;
+
+    if (clickCountRef.current >= 5) {
+      e.preventDefault();
+      clickCountRef.current = 0;
+      router.push('/admin');
+    }
+  };
 
   const animalEmoji = currentUser.avatar_emoji || '🦊';
 
@@ -20,8 +42,8 @@ export function Navbar() {
     <>
       <header className="sticky top-0 z-40 bg-dark-bg/85 backdrop-blur-md border-b border-dark-border/60">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
+          {/* Brand Logo with Stealth Admin Trigger */}
+          <Link href="/" onClick={handleLogoClick} className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white shadow-md shadow-emerald-950/40 group-hover:scale-105 transition-transform">
               <Split className="w-5 h-5 -rotate-45" />
             </div>
