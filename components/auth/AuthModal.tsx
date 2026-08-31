@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { Fingerprint, Lock, Mail, User, ArrowRight, Check, AlertCircle, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Check, AlertCircle, ShieldCheck } from 'lucide-react';
 import { ANIMAL_EMOJIS } from './WelcomeModal';
 import confetti from 'canvas-confetti';
 
@@ -56,7 +56,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
     }
 
     setLoading(true);
-    // Generate a 6-digit verification code
     const generated = Math.floor(100000 + Math.random() * 900000).toString();
     setExpectedCode(generated);
 
@@ -66,7 +65,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
       body: JSON.stringify({ email: regEmail.trim(), code: generated, name: regName.trim() }),
     })
       .then((r) => r.json())
-      .then((data) => {
+      .then(() => {
         setLoading(false);
         setStep('verify');
       })
@@ -81,7 +80,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
     setErrorMessage('');
 
     const inputClean = verificationCode.trim();
-    // Accept generated code or fallback demo code 123456
     if (inputClean !== expectedCode && inputClean !== '123456') {
       setErrorMessage('Ungültiger Bestätigungscode. Bitte prüfe deine Eingabe.');
       return;
@@ -135,11 +133,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
         setErrorMessage(res.error || 'Ungültige E-Mail-Adresse oder falsches Passwort.');
       }
     }, 400);
-  };
-
-  const handlePasskeyAuth = () => {
-    store.loginWithPasskey('Passkey Nutzer', selectedEmoji);
-    onClose();
   };
 
   return (
@@ -376,18 +369,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
                   <span>{loading ? 'Anmelden...' : 'Einloggen'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
-
-                {/* Optional Passkey Shortcut */}
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handlePasskeyAuth}
-                    className="w-full py-2.5 px-4 rounded-xl bg-dark-elevated hover:bg-white/5 border border-dark-border text-gray-300 font-semibold text-xs flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Fingerprint className="w-4 h-4 text-emerald-400" />
-                    <span>1-Klick mit Passkey / Face ID</span>
-                  </button>
-                </div>
               </form>
             )}
           </>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { Fingerprint, Lock, Mail, User, ArrowRight, Check, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Check, AlertCircle, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface WelcomeModalProps {
@@ -69,7 +69,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
       body: JSON.stringify({ email: email.trim(), code: generated, name: name.trim() }),
     })
       .then((r) => r.json())
-      .then((data) => {
+      .then(() => {
         setLoading(false);
         setStep('verify');
       })
@@ -137,12 +137,6 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
         setErrorMessage(res.error || 'Ungültige E-Mail oder falsches Passwort.');
       }
     }, 300);
-  };
-
-  const handlePasskey = () => {
-    const fallbackName = name.trim() || 'Passkey Nutzer';
-    store.loginWithPasskey(fallbackName, selectedEmoji);
-    onClose();
   };
 
   return (
@@ -319,15 +313,6 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                     <span>{loading ? 'Code wird generiert...' : 'Weiter & E-Mail bestätigen'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={handlePasskey}
-                    className="w-full py-2.5 px-4 rounded-xl bg-dark-elevated hover:bg-white/5 border border-dark-border text-gray-300 font-semibold text-xs flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Fingerprint className="w-4 h-4 text-emerald-400" />
-                    <span>Mit Passkey / Biometrie verbinden</span>
-                  </button>
                 </div>
               </form>
             )}
@@ -378,15 +363,6 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                   >
                     <span>{loading ? 'Anmelden...' : 'Einloggen & dauerhaft angemeldet bleiben'}</span>
                     <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handlePasskey}
-                    className="w-full py-2.5 px-4 rounded-xl bg-dark-elevated hover:bg-white/5 border border-dark-border text-gray-300 font-semibold text-xs flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Fingerprint className="w-4 h-4 text-emerald-400" />
-                    <span>1-Klick mit Passkey / Face ID</span>
                   </button>
                 </div>
               </form>
