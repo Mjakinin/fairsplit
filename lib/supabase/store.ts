@@ -231,10 +231,15 @@ export const FairSplitStore = {
       created_at: new Date().toISOString(),
     };
 
+    let pHash = password;
+    try {
+      pHash = btoa(encodeURIComponent(password));
+    } catch {}
+
     const newAccount: UserAccount = {
       id: newProfile.id,
       email: cleanEmail,
-      passwordHash: btoa(password), // Simple base64 client store hash
+      passwordHash: pHash,
       profile: newProfile,
     };
 
@@ -253,18 +258,64 @@ export const FairSplitStore = {
   ): { success: boolean; error?: string; user?: Profile } {
     initStore();
     const cleanEmail = email.trim().toLowerCase();
+    
+    let pHash = password;
+    try {
+      pHash = btoa(encodeURIComponent(password));
+    } catch {}
+
     const account = globalAccounts.find(
-      (a) => a.email.toLowerCase() === cleanEmail && a.passwordHash === btoa(password)
+      (a) =>
+        a.email.toLowerCase() === cleanEmail &&
+        (a.passwordHash === pHash ||
+          a.passwordHash === password ||
+          (function () {
+            try {
+              return a.passwordHash === btoa(password);
+            } catch {
+              return false;
+            }
+          })())
     );
 
     if (!account) {
-      return { success: false, error: 'Ungültige E-Mail-Adresse oder falsches Passwort.' };
+      const emailExists = globalAccounts.some((a) => a.email.toLowerCase() === cleanEmail);
+      if (emailExists) {
+        return { success: false, error: 'Falsches Passwort. Bitte erneut versuchen oder auf "Passwort vergessen" klicken.' };
+      }
+      return { success: false, error: 'Kein Konto mit dieser E-Mail gefunden. Bitte erstelle zuerst ein Konto.' };
     }
 
     globalCurrentUser = account.profile;
     saveToStorage();
     notify();
     return { success: true, user: account.profile };
+  },
+
+  // Auth: Reset Password
+  resetPassword(
+    email: string,
+    newPassword: string
+  ): { success: boolean; error?: string; user?: Profile } {
+    initStore();
+    const cleanEmail = email.trim().toLowerCase();
+    const accountIndex = globalAccounts.findIndex((a) => a.email.toLowerCase() === cleanEmail);
+
+    if (accountIndex === -1) {
+      return { success: false, error: 'Kein Konto mit dieser E-Mail-Adresse gefunden.' };
+    }
+
+    let pHash = newPassword;
+    try {
+      pHash = btoa(encodeURIComponent(newPassword));
+    } catch {}
+
+    globalAccounts[accountIndex].passwordHash = pHash;
+    globalCurrentUser = globalAccounts[accountIndex].profile;
+
+    saveToStorage();
+    notify();
+    return { success: true, user: globalAccounts[accountIndex].profile };
   },
 
   // Auth: Passkey / Biometrics 1-Click

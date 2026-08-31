@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { Lock, Mail, User, ArrowRight, Check, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Check, AlertCircle, ShieldCheck, KeyRound } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface WelcomeModalProps {
@@ -21,7 +21,7 @@ export const ANIMAL_EMOJIS = [
 export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   const store = useFairSplitStore();
   const [activeTab, setActiveTab] = useState<'register' | 'login'>('register');
-  const [step, setStep] = useState<'form' | 'verify'>('form');
+  const [step, setStep] = useState<'form' | 'verify' | 'forgot' | 'reset-verify'>('form');
 
   // Register Form
   const [name, setName] = useState('');
@@ -33,11 +33,15 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
 
   // Verification Code
   const [verificationCode, setVerificationCode] = useState('');
-  const [expectedCode, setExpectedCode] = useState('123456');
+  const [expectedCode, setExpectedCode] = useState('');
 
   // Login Form
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  // Forgot Password Form
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -84,8 +88,8 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     setErrorMessage('');
 
     const inputClean = verificationCode.trim();
-    if (inputClean !== expectedCode && inputClean !== '123456') {
-      setErrorMessage('Ungültiger Bestätigungscode. Bitte prüfe deine Eingabe.');
+    if (inputClean !== expectedCode) {
+      setErrorMessage('Ungültiger Bestätigungscode. Bitte prüfe dein E-Mail-Postfach.');
       return;
     }
 
@@ -139,12 +143,86 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     }, 300);
   };
 
+  // Forgot Password
+  const handleStartForgotPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+
+    if (!forgotEmail.trim() || !forgotEmail.includes('@')) {
+      setErrorMessage('Bitte gib deine E-Mail-Adresse ein.');
+      return;
+    }
+
+    setLoading(true);
+    const generated = Math.floor(100000 + Math.random() * 900000).toString();
+    setExpectedCode(generated);
+
+    fetch('/api/auth/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: forgotEmail.trim(), code: generated, name: 'FairSplit Nutzer' }),
+    })
+      .then((r) => r.json())
+      .then(() => {
+        setLoading(false);
+        setStep('reset-verify');
+      })
+      .catch(() => {
+        setLoading(false);
+        setStep('reset-verify');
+      });
+  };
+
+  const handleResetPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+
+    if (verificationCode.trim() !== expectedCode) {
+      setErrorMessage('Ungültiger Bestätigungscode. Bitte prüfe dein E-Mail-Postfach.');
+      return;
+    }
+    if (!newPassword || newPassword.length < 4) {
+      setErrorMessage('Das neue Passwort muss mindestens 4 Zeichen lang sein.');
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      const res = store.resetPassword(forgotEmail, newPassword);
+      setLoading(false);
+
+      if (res.success) {
+        try {
+          confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+        } catch {}
+        onClose();
+        setStep('form');
+      } else {
+        setErrorMessage(res.error || 'Passwort konnte nicht geändert werden.');
+      }
+    }, 300);
+  };
+
+  const getTitle = () => {
+    if (step === 'verify') return 'E-Mail bestätigen 📬';
+    if (step === 'forgot') return 'Passwort vergessen 🔑';
+    if (step === 'reset-verify') return 'Neues Passwort festlegen 🔒';
+    return 'Willkommen bei FairSplit! ⚡';
+  };
+
+  const getSubtitle = () => {
+    if (step === 'verify') return 'Gib den 6-stelligen Bestätigungscode aus deiner E-Mail ein';
+    if (step === 'forgot') return 'Wir senden dir einen Code zur Passwort-Wiederherstellung';
+    if (step === 'reset-verify') return 'Code aus der E-Mail eingeben und neues Passwort wählen';
+    return 'Einfach & sicher anmelden – dauerhaft eingeloggt bleiben';
+  };
+
   return (
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
-      title={step === 'verify' ? 'E-Mail bestätigen 📬' : 'Willkommen bei FairSplit! ⚡'}
-      subtitle={step === 'verify' ? 'Gib den 6-stelligen Bestätigungscode ein' : 'Einfach & sicher anmelden – dauerhaft eingeloggt bleiben'}
+      title={getTitle()}
+      subtitle={getSubtitle()}
       maxHeight="max-h-[94vh]"
     >
       <div className="space-y-4 py-1">
@@ -310,7 +388,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                     disabled={loading}
                     className="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                   >
-                    <span>{loading ? 'Code wird generiert...' : 'Weiter & E-Mail bestätigen'}</span>
+                    <span>{loading ? 'Code wird gesendet...' : 'Weiter & E-Mail bestätigen'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -325,7 +403,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                     E-Mail Adresse
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
+                    <Mail className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
                     <input
                       type="email"
                       required
@@ -339,11 +417,24 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                    Passwort
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                      Passwort
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotEmail(loginEmail);
+                        setErrorMessage('');
+                        setStep('forgot');
+                      }}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+                    >
+                      Passwort vergessen?
+                    </button>
+                  </div>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
+                    <Lock className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
                     <input
                       type="password"
                       required
@@ -379,14 +470,9 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white">Sicherheitscode eingeben</h4>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Wir haben einen 6-stelligen Bestätigungscode an <strong className="text-white">{email}</strong> gesendet.
+                <p className="text-xs text-gray-400 mt-1">
+                  Wir haben dir einen 6-stelligen Bestätigungscode an <strong className="text-emerald-400">{email}</strong> gesendet. Bitte schau in dein E-Mail-Postfach.
                 </p>
-              </div>
-
-              {/* Demo Hint Banner */}
-              <div className="inline-block p-2 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs font-mono">
-                Dein Code: <span className="font-bold tracking-widest text-white">{expectedCode}</span>
               </div>
             </div>
 
@@ -400,7 +486,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 text-center">
-                6-stelliger Code
+                6-stelliger Code aus deiner E-Mail
               </label>
               <input
                 type="text"
@@ -430,6 +516,143 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                 className="w-full py-2 px-4 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
               >
                 Zurück zur Eingabe
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* FORGOT PASSWORD: STEP 1 */}
+        {step === 'forgot' && (
+          <form onSubmit={handleStartForgotPassword} className="space-y-4 pt-1">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto shadow-md">
+                <KeyRound className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Passwort zurücksetzen</h4>
+                <p className="text-xs text-gray-400 mt-1">
+                  Gib deine E-Mail-Adresse ein. Wir senden dir sofort einen Code zur Passwort-Wiederherstellung.
+                </p>
+              </div>
+            </div>
+
+            {errorMessage && (
+              <div className="p-3 bg-rose-950/30 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+                Deine registrierte E-Mail-Adresse
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="beispiel@mail.de"
+                  className="w-full bg-dark-elevated border border-dark-border rounded-xl pl-10 pr-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              >
+                <span>{loading ? 'Code wird gesendet...' : 'Reset-Code per E-Mail senden'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStep('form')}
+                className="w-full py-2 px-4 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+              >
+                Zurück zum Login
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* FORGOT PASSWORD: STEP 2 (RESET & LOGIN) */}
+        {step === 'reset-verify' && (
+          <form onSubmit={handleResetPassword} className="space-y-4 pt-1">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-md">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Neues Passwort festlegen</h4>
+                <p className="text-xs text-gray-400 mt-1">
+                  Code aus der E-Mail an <strong className="text-emerald-400">{forgotEmail}</strong> eingeben:
+                </p>
+              </div>
+            </div>
+
+            {errorMessage && (
+              <div className="p-3 bg-rose-950/30 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 text-center">
+                6-stelliger Code aus deiner E-Mail
+              </label>
+              <input
+                type="text"
+                required
+                autoFocus
+                maxLength={6}
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="z. B. 482910"
+                className="w-full bg-dark-elevated border-2 border-emerald-500/50 rounded-2xl px-4 py-3 text-center text-2xl font-mono tracking-widest text-white focus:outline-none focus:border-emerald-400 font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+                Neues Passwort
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mindestens 4 Zeichen"
+                  className="w-full bg-dark-elevated border border-dark-border rounded-xl pl-10 pr-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base shadow-xl shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              >
+                <span>{loading ? 'Wird gespeichert...' : 'Passwort ändern & einloggen'}</span>
+                <Check className="w-5 h-5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStep('form')}
+                className="w-full py-2 px-4 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+              >
+                Abbrechen
               </button>
             </div>
           </form>
