@@ -11,7 +11,7 @@ import { detectCategoryFromTitle } from '@/lib/utils/categoryDetector';
 import { 
   Utensils, ShoppingCart, Car, Building2, Ticket, Receipt, Plus, Trash2, 
   Percent, Sparkles, Check, Users, DollarSign, Calculator, Coffee, Zap, 
-  ChevronUp, ChevronDown, AlertCircle, ArrowRight, ShieldCheck 
+  ChevronUp, ChevronDown, AlertCircle, ArrowRight, ShieldCheck, Camera, Upload, Loader2 
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -81,6 +81,67 @@ export function ExpenseFormModal({
   const [tipExactAmount, setTipExactAmount] = useState<string>('0');
   const [serviceCharge, setServiceCharge] = useState<string>('0');
   const [surchargeSplitMode, setSurchargeSplitMode] = useState<SurchargeSplitMode>('proportional');
+
+  // AI Receipt Scanner State
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStatusText, setScanStatusText] = useState('');
+
+  const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    setScanStatusText('Beleg wird per KI analysiert...');
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        try {
+          const res = await fetch('/api/receipt/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64: base64 }),
+          });
+          const data = await res.json();
+          setIsScanning(false);
+
+          if (data.success && data.receipt) {
+            const r = data.receipt;
+            if (r.title) {
+              setTitle(r.title);
+              setIsCategoryManuallySet(true);
+            }
+            if (r.category) setCategory(r.category);
+            if (r.date) setExpenseDate(r.date);
+
+            if (r.items && Array.isArray(r.items) && r.items.length > 0) {
+              const parsedItems: ExpenseItem[] = r.items.map((item: any, idx: number) => ({
+                id: `item-${Date.now()}-${idx}`,
+                name: item.name || `Position #${idx + 1}`,
+                price: parseFloat(item.price) || 0,
+                quantity: item.quantity || 1,
+                assignments: members.map((m) => ({ user_id: m.user_id, share_count: 1 })),
+              }));
+              setItems(parsedItems);
+            }
+            setMode('itemized');
+            try {
+              confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+            } catch {}
+          } else {
+            alert('Beleg konnte nicht gelesen werden.');
+          }
+        } catch {
+          setIsScanning(false);
+          alert('Verbindungsfehler beim Scannen des Belegs.');
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsScanning(false);
+    }
+  };
 
   // Populate state when editing
   useEffect(() => {
@@ -769,7 +830,42 @@ export function ExpenseFormModal({
         {/* 3. MODE B: BELEG-SPLITTER (POSITIONEN, REORDERING, PROMINENT BUTTON & TRINKGELD IN €) */}
         {mode === 'itemized' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            {/* AI Receipt Scanner Upload Box */}
+            <div className="p-3.5 bg-gradient-to-r from-emerald-950/40 via-dark-card to-emerald-950/40 border border-emerald-500/40 rounded-2xl flex items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <div>
+                  <h5 className="font-bold text-white text-xs sm:text-sm">Foto vom Beleg scannen</h5>
+                  <p className="text-[10px] text-gray-400">KI erkennt Positionen & Preise automatisch</p>
+                </div>
+              </div>
+
+              <label className="cursor-pointer py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-950/50 transition-all active:scale-95">
+                {isScanning ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Lese...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Foto wählen</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleScanReceipt}
+                  disabled={isScanning}
+                />
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
               <div>
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
                   Rechnungspositionen & Gerichte
