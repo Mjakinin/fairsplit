@@ -18,23 +18,32 @@ export function UserProfileDrawer({ isOpen, onClose, onOpenAuth }: UserProfileDr
 
   const [displayName, setDisplayName] = useState(currentUser.display_name);
   const [selectedEmoji, setSelectedEmoji] = useState(currentUser.avatar_emoji || '🦊');
-  const [paypalHandle, setPaypalHandle] = useState(currentUser.paypal_me_handle || '');
+  
+  const isSameInitial = !currentUser.paypal_me_handle || (currentUser.email && currentUser.paypal_me_handle === currentUser.email);
+  const [samePaypalEmail, setSamePaypalEmail] = useState(Boolean(isSameInitial));
+  const [separatePaypalEmail, setSeparatePaypalEmail] = useState(currentUser.paypal_me_handle || '');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setDisplayName(currentUser.display_name);
       setSelectedEmoji(currentUser.avatar_emoji || '🦊');
-      setPaypalHandle(currentUser.paypal_me_handle || '');
+      const isSame = !currentUser.paypal_me_handle || (currentUser.email && currentUser.paypal_me_handle === currentUser.email);
+      setSamePaypalEmail(Boolean(isSame));
+      setSeparatePaypalEmail(currentUser.paypal_me_handle || '');
     }
   }, [isOpen, currentUser]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalPaypal = samePaypalEmail
+      ? (currentUser.email || null)
+      : separatePaypalEmail.replace(/^@/, '').trim() || null;
+
     store.updateProfile({
       display_name: displayName.trim() || 'Ich',
       avatar_emoji: selectedEmoji,
-      paypal_me_handle: paypalHandle.replace(/^@/, '').trim() || null,
+      paypal_me_handle: finalPaypal,
     });
     setSaved(true);
     setTimeout(() => {
@@ -84,7 +93,7 @@ export function UserProfileDrawer({ isOpen, onClose, onOpenAuth }: UserProfileDr
           <div className="flex-1 min-w-0">
             <div className="font-bold text-white text-base truncate">{displayName}</div>
             <div className="text-xs text-emerald-400 font-medium truncate">
-              {currentUser.email ? currentUser.email : 'Eingeloggt'}
+              {currentUser.email ? currentUser.email : 'Lokal angemeldet'}
             </div>
           </div>
         </div>
@@ -125,19 +134,33 @@ export function UserProfileDrawer({ isOpen, onClose, onOpenAuth }: UserProfileDr
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 flex items-center justify-between">
-            <span>PayPal E-Mail</span>
-            <span className="text-gray-500 normal-case font-normal">Optional</span>
+        {/* PayPal Email Checkbox Toggle */}
+        <div className="p-3.5 bg-dark-elevated rounded-2xl border border-dark-border space-y-2.5">
+          <label className="flex items-center gap-2.5 cursor-pointer select-none text-xs text-gray-200">
+            <input
+              type="checkbox"
+              checked={samePaypalEmail}
+              onChange={(e) => setSamePaypalEmail(e.target.checked)}
+              className="w-4 h-4 rounded bg-dark-card border-dark-border text-emerald-600 focus:ring-0"
+            />
+            <span className="font-semibold">PayPal-E-Mail ist identisch mit Login-E-Mail</span>
           </label>
-          <input
-            type="email"
-            value={paypalHandle}
-            onChange={(e) => setPaypalHandle(e.target.value)}
-            placeholder="beispiel@mail.de"
-            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
-          />
-          <p className="text-[11px] text-gray-500 mt-1">
+
+          {!samePaypalEmail && (
+            <div className="pt-2 border-t border-dark-border/50">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
+                Abweichende PayPal-E-Mail
+              </label>
+              <input
+                type="email"
+                value={separatePaypalEmail}
+                onChange={(e) => setSeparatePaypalEmail(e.target.value)}
+                placeholder="beispiel@mail.de"
+                className="w-full bg-dark-card border border-dark-border rounded-xl px-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
+              />
+            </div>
+          )}
+          <p className="text-[11px] text-gray-500">
             Wird für 1-Klick Rückzahlungen via PayPal genutzt.
           </p>
         </div>
