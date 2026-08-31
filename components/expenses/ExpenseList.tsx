@@ -105,10 +105,10 @@ export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProp
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 border hover:scale-[1.04] active:scale-95 ${
                 selectedCategory === cat.id
-                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                  : 'bg-dark-card border-dark-border text-gray-400 hover:text-white'
+                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-sm shadow-emerald-950/40'
+                  : 'bg-dark-card border-dark-border text-gray-400 hover:text-white hover:border-white/20'
               }`}
             >
               {cat.label}
@@ -135,11 +135,11 @@ export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProp
               <div
                 key={expense.id}
                 onClick={() => setSelectedExpense(expense)}
-                className="flex items-center justify-between p-4 bg-dark-card hover:bg-dark-elevated border border-dark-border rounded-2xl shadow-sm transition-all active:scale-[0.99] cursor-pointer group"
+                className="flex items-center justify-between p-4 bg-dark-card hover:bg-dark-elevated border border-dark-border hover:border-emerald-500/40 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-emerald-950/20 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] cursor-pointer group"
               >
                 {/* Left Icon & Details */}
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-white/20 transition-colors">
+                  <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-emerald-500/40 group-hover:bg-emerald-950/20 group-hover:scale-105 transition-all duration-200">
                     {categoryIcons[expense.category] || categoryIcons.general}
                   </div>
                   <div className="min-w-0">
@@ -162,7 +162,7 @@ export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProp
                 {/* Right amounts */}
                 <div className="flex items-center gap-3 flex-shrink-0 pl-2">
                   <div className="text-right">
-                    <div className="text-sm sm:text-base font-extrabold text-white">
+                    <div className="text-sm sm:text-base font-extrabold text-white group-hover:text-emerald-300 transition-colors">
                       {formatCurrency(expense.total_amount, expense.currency)}
                     </div>
                     {mySplit ? (
@@ -173,7 +173,7 @@ export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProp
                       <div className="text-[11px] text-gray-500">Nicht beteiligt</div>
                     )}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all duration-200" />
                 </div>
               </div>
             );

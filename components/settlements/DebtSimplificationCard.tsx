@@ -127,12 +127,12 @@ export function DebtSimplificationCard({
               return (
                 <div
                   key={index}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border transition-all ${
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg group ${
                     isMePayer
-                      ? 'bg-rose-950/20 border-rose-500/40 shadow-sm'
+                      ? 'bg-rose-950/20 border-rose-500/40 hover:border-rose-500/70 shadow-sm'
                       : isMePayee
-                      ? 'bg-emerald-950/20 border-emerald-500/40 shadow-sm'
-                      : 'bg-dark-card border-dark-border/80'
+                      ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-500/70 shadow-sm'
+                      : 'bg-dark-card border-dark-border/80 hover:border-white/20 hover:bg-dark-elevated/80'
                   }`}
                 >
                   {/* From -> To */}
@@ -144,7 +144,7 @@ export function DebtSimplificationCard({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 text-gray-500 px-1">
+                    <div className="flex items-center gap-1 text-gray-500 px-1 group-hover:scale-110 transition-transform duration-200">
                       <ArrowRight className="w-4 h-4 text-emerald-400" />
                     </div>
 
@@ -171,9 +171,9 @@ export function DebtSimplificationCard({
                           amount: debt.amount,
                         })
                       }
-                      className="py-1.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all active:scale-95"
+                      className="py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 hover:shadow-emerald-950/70 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-1.5"
                     >
-                      Ausgleichen
+                      <span>Ausgleichen</span>
                     </button>
                   </div>
                 </div>
