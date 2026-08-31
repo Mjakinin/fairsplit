@@ -1,0 +1,31 @@
+{
+  "name": "FairSplit - Smarte Ausgaben & Belege",
+  "short_name": "FairSplit",
+  "description": "Moderne PWA Splitwise-Alternative mit Beleg-Splitter, Trinkgeld & Schulden-Minimierung.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090d10",
+  "theme_color": "#090d10",
+  "categories": ["finance", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
