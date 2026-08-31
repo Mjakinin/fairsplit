@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { GroupMember, Expense, Settlement, SimplifiedDebt } from '@/lib/types';
+import { GroupMember, Expense, Settlement, SimplifiedDebt, CurrencyCode } from '@/lib/types';
 import { calculateUserBalances, simplifyDebts } from '@/lib/algorithms/debtSimplification';
-import { formatCurrency } from '@/lib/utils/format';
+import { formatCurrency, formatDate } from '@/lib/utils/format';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { Avatar } from '../ui/Avatar';
-import { ArrowRight, CheckCircle2, QrCode, Sparkles, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { 
+  ArrowRight, CheckCircle2, QrCode, Sparkles, TrendingUp, TrendingDown, 
+  RotateCcw, History, CreditCard, Banknote 
+} from 'lucide-react';
 import { SettleUpModal } from './SettleUpModal';
 import { GiroCodeModal } from './GiroCodeModal';
 
@@ -15,6 +18,7 @@ interface DebtSimplificationCardProps {
   members: GroupMember[];
   expenses: Expense[];
   settlements: Settlement[];
+  currency?: CurrencyCode;
 }
 
 export function DebtSimplificationCard({
@@ -22,6 +26,7 @@ export function DebtSimplificationCard({
   members,
   expenses,
   settlements,
+  currency = 'EUR',
 }: DebtSimplificationCardProps) {
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
@@ -36,10 +41,16 @@ export function DebtSimplificationCard({
 
   const memberProfiles = members.map((m) => m.profile);
   const balances = calculateUserBalances(memberProfiles, expenses, settlements);
-  const simplified = simplifyDebts(balances);
+  const simplified = simplifyDebts(balances, currency);
 
   const myBalance = balances[currentUser.id]?.netBalance || 0;
   const isSettled = Object.values(balances).every((b) => Math.abs(b.netBalance) < 0.01);
+
+  const handleUndoSettlement = (settlementId: string) => {
+    if (confirm('Möchtest du diese Ausgleichszahlung wirklich stornieren?')) {
+      store.deleteSettlement(settlementId);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -59,11 +70,11 @@ export function DebtSimplificationCard({
                   : 'text-gray-200'
               }`}
             >
-              {myBalance > 0 ? `+${formatCurrency(myBalance)}` : formatCurrency(myBalance)}
+              {myBalance > 0 ? `+${formatCurrency(myBalance, currency)}` : formatCurrency(myBalance, currency)}
             </div>
             <div className="text-xs text-gray-400 mt-1.5">
               {myBalance > 0
-                ? 'Dir wird insgesamt Geld geschuldet.'
+                ? 'Dir wird insgesamt Geld aus der Gruppe geschuldet.'
                 : myBalance < 0
                 ? 'Du schuldest der Gruppe Geld.'
                 : 'Alles komplett ausgeglichen!'}
@@ -95,7 +106,7 @@ export function DebtSimplificationCard({
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
               Schulden-Minimierung (Smart Min-Cash-Flow)
             </h3>
           </div>
@@ -105,10 +116,10 @@ export function DebtSimplificationCard({
         </div>
 
         {isSettled ? (
-          <div className="p-8 text-center bg-dark-card border border-dark-border rounded-2xl space-y-2">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-            <h4 className="font-bold text-white">Alle Schulden sind ausgeglichen!</h4>
-            <p className="text-xs text-gray-400">Es sind aktuell keine offenen Zahlungen in dieser Gruppe vorhanden.</p>
+          <div className="p-8 text-center bg-dark-card border border-dark-border rounded-3xl space-y-2">
+            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+            <h4 className="font-bold text-white text-base">Alle Schulden sind ausgeglichen! 🎉</h4>
+            <p className="text-xs text-gray-400">Es sind aktuell keine offenen Verbindlichkeiten in dieser Gruppe vorhanden.</p>
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -130,7 +141,7 @@ export function DebtSimplificationCard({
                   {/* From -> To */}
                   <div className="flex items-center gap-3 min-w-0 mb-3 sm:mb-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Avatar name={debt.fromUser.display_name} size="sm" />
+                      <Avatar name={debt.fromUser.display_name} avatarEmoji={debt.fromUser.avatar_emoji} size="sm" />
                       <span className="text-sm font-semibold text-white truncate max-w-[110px]">
                         {debt.fromUser.display_name} {isMePayer && '(Du)'}
                       </span>
@@ -141,7 +152,7 @@ export function DebtSimplificationCard({
                     </div>
 
                     <div className="flex items-center gap-2 min-w-0">
-                      <Avatar name={debt.toUser.display_name} size="sm" />
+                      <Avatar name={debt.toUser.display_name} avatarEmoji={debt.toUser.avatar_emoji} size="sm" />
                       <span className="text-sm font-semibold text-white truncate max-w-[110px]">
                         {debt.toUser.display_name} {isMePayee && '(Du)'}
                       </span>
@@ -173,7 +184,7 @@ export function DebtSimplificationCard({
                             amount: debt.amount,
                           })
                         }
-                        className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all active:scale-95"
+                        className="py-1.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all active:scale-95"
                       >
                         Ausgleichen
                       </button>
@@ -189,7 +200,7 @@ export function DebtSimplificationCard({
       {/* Complete Member Balance Overview */}
       <div className="p-5 bg-dark-card border border-dark-border rounded-2xl space-y-3">
         <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-          Gruppenmitglieder Übersicht
+          Gruppenmitglieder Salden
         </h4>
         <div className="space-y-2">
           {members.map((m) => {
@@ -201,7 +212,7 @@ export function DebtSimplificationCard({
                 className="flex items-center justify-between py-2 border-b border-dark-border/40 last:border-0"
               >
                 <div className="flex items-center gap-2.5">
-                  <Avatar name={m.profile.display_name} size="sm" />
+                  <Avatar name={m.profile.display_name} avatarEmoji={m.profile.avatar_emoji} size="sm" />
                   <span className="text-sm font-medium text-white">
                     {m.profile.display_name} {isMe && '(Du)'}
                   </span>
@@ -215,7 +226,7 @@ export function DebtSimplificationCard({
                       : 'text-gray-400'
                   }`}
                 >
-                  {bal > 0 ? `+${formatCurrency(bal)}` : formatCurrency(bal)}
+                  {bal > 0 ? `+${formatCurrency(bal, currency)}` : formatCurrency(bal, currency)}
                 </div>
               </div>
             );
@@ -223,11 +234,58 @@ export function DebtSimplificationCard({
         </div>
       </div>
 
+      {/* Past Settlements History */}
+      {settlements.length > 0 && (
+        <div className="p-5 bg-dark-card border border-dark-border rounded-2xl space-y-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+            <History className="w-4 h-4 text-emerald-400" />
+            <span>Erfasste Ausgleichszahlungen ({settlements.length})</span>
+          </h4>
+          <div className="space-y-2">
+            {settlements.map((set) => {
+              const payerName = members.find((m) => m.user_id === set.payer_id)?.profile.display_name || 'Jemand';
+              const payeeName = members.find((m) => m.user_id === set.payee_id)?.profile.display_name || 'Jemand';
+
+              return (
+                <div
+                  key={set.id}
+                  className="flex items-center justify-between p-3 bg-dark-elevated rounded-xl border border-dark-border/60 text-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                      <Banknote className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">
+                        {payerName} ➔ {payeeName}
+                      </div>
+                      <div className="text-[11px] text-gray-400">
+                        {formatCurrency(set.amount, set.currency)} ({set.payment_method.toUpperCase()}) • {formatDate(set.settlement_date)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleUndoSettlement(set.id)}
+                    className="p-1.5 text-gray-400 hover:text-rose-400 rounded-lg hover:bg-white/5 transition-colors"
+                    title="Ausgleich stornieren"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Settle Up Modal */}
       {settleTarget && (
         <SettleUpModal
           groupId={groupId}
           members={members}
+          currency={currency}
           initialPayerId={settleTarget.payerId}
           initialPayeeId={settleTarget.payeeId}
           initialAmount={settleTarget.amount}

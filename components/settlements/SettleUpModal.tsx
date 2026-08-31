@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { GroupMember, Profile, PaymentMethod } from '@/lib/types';
+import { GroupMember, Profile, PaymentMethod, CurrencyCode } from '@/lib/types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { formatCurrency } from '@/lib/utils/format';
@@ -13,6 +13,7 @@ import { GiroCodeModal } from './GiroCodeModal';
 interface SettleUpModalProps {
   groupId: string;
   members: GroupMember[];
+  currency?: CurrencyCode;
   initialPayerId?: string;
   initialPayeeId?: string;
   initialAmount?: number;
@@ -23,6 +24,7 @@ interface SettleUpModalProps {
 export function SettleUpModal({
   groupId,
   members,
+  currency = 'EUR',
   initialPayerId,
   initialPayeeId,
   initialAmount,
@@ -62,18 +64,18 @@ export function SettleUpModal({
       payer_id: payerId,
       payee_id: payeeId,
       amount: parsedAmount,
-      currency: 'EUR',
+      currency,
       payment_method: paymentMethod,
       notes: notes.trim() || null,
       settlement_date: new Date().toISOString().split('T')[0],
       created_by: currentUser.id,
     });
 
-    // Confetti animation on settlement
+    // Confetti celebration animation on settlement
     try {
       confetti({
-        particleCount: 80,
-        spread: 70,
+        particleCount: 100,
+        spread: 80,
         origin: { y: 0.6 },
       });
     } catch {}
@@ -132,7 +134,7 @@ export function SettleUpModal({
           {/* Amount */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-              Ausgleichsbetrag (€) *
+              Ausgleichsbetrag ({currency}) *
             </label>
             <div className="relative">
               <input
@@ -145,7 +147,7 @@ export function SettleUpModal({
                 placeholder="0.00"
                 className="w-full bg-dark-elevated border border-dark-border rounded-2xl px-4 py-3.5 text-3xl font-extrabold text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
               />
-              <span className="absolute right-4 top-4 text-gray-400 text-xl font-bold">€</span>
+              <span className="absolute right-4 top-4 text-gray-400 text-xl font-bold">{currency === 'EUR' ? '€' : currency}</span>
             </div>
           </div>
 
@@ -166,7 +168,7 @@ export function SettleUpModal({
                   onClick={() => setPaymentMethod(pm.id as any)}
                   className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-medium gap-1.5 transition-all ${
                     paymentMethod === pm.id
-                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-sm'
                       : 'bg-dark-elevated border-dark-border text-gray-400 hover:text-white'
                   }`}
                 >
@@ -221,6 +223,7 @@ export function SettleUpModal({
           fromUser={payerProfile}
           toUser={payeeProfile}
           amount={parseFloat(amount) || 0}
+          currency={currency}
           isOpen={showGiroModal}
           onClose={() => setShowGiroModal(false)}
         />

@@ -1,23 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { calculateUserBalances } from '@/lib/algorithms/debtSimplification';
 import { formatCurrency } from '@/lib/utils/format';
 import { Avatar } from '@/components/ui/Avatar';
 import { CreateGroupModal } from '@/components/groups/CreateGroupModal';
+import { WelcomeModal } from '@/components/auth/WelcomeModal';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { 
   Users, Plus, ArrowUpRight, Receipt, Sparkles, ShieldCheck, 
-  ChevronRight, QrCode, TrendingUp, TrendingDown, CheckCircle2 
+  ChevronRight, QrCode, TrendingUp, TrendingDown, CheckCircle2, 
+  Database, UserCheck 
 } from 'lucide-react';
 
 export default function HomePage() {
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
   const groups = store.getGroups();
+
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+
+  useEffect(() => {
+    // If brand new user with default fallback name, show Welcome Modal
+    if (currentUser.display_name === 'Ich' && !currentUser.email) {
+      setWelcomeOpen(true);
+    }
+  }, [currentUser]);
 
   // Overall Balances across all groups
   let totalNet = 0;
@@ -30,6 +41,10 @@ export default function HomePage() {
     const balances = calculateUserBalances(members, expenses, settlements);
     totalNet += balances[currentUser.id]?.netBalance || 0;
   }
+
+  const handleLoadDemo = () => {
+    store.loadDemoSeedData();
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -52,9 +67,13 @@ export default function HomePage() {
             >
               {totalNet > 0 ? `+${formatCurrency(totalNet)}` : formatCurrency(totalNet)}
             </div>
-            <p className="text-xs sm:text-sm text-gray-400 mt-2">
-              Angemeldet als <strong className="text-white">{currentUser.display_name}</strong>
-            </p>
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 mt-2">
+              <span>Angemeldet als</span>
+              <span className="text-white font-bold inline-flex items-center gap-1.5 bg-dark-card px-2.5 py-1 rounded-lg border border-dark-border">
+                <span>{currentUser.avatar_emoji || '👤'}</span>
+                <span>{currentUser.display_name}</span>
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2.5">
@@ -111,87 +130,129 @@ export default function HomePage() {
             <Users className="w-5 h-5 text-emerald-400" />
             <span>Deine Gruppen ({groups.length})</span>
           </h2>
-          <button
-            onClick={() => setCreateGroupOpen(true)}
-            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Gruppe erstellen</span>
-          </button>
+          {groups.length > 0 && (
+            <button
+              onClick={() => setCreateGroupOpen(true)}
+              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Gruppe erstellen</span>
+            </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {groups.map((group) => {
-            const groupData = store.getGroupById(group.id);
-            const members = groupData?.members || [];
-            const expenses = store.getGroupExpenses(group.id);
-            const settlements = store.getGroupSettlements(group.id);
-            const balances = calculateUserBalances(
-              members.map((m) => m.profile),
-              expenses,
-              settlements
-            );
-            const myGroupBalance = balances[currentUser.id]?.netBalance || 0;
+        {/* Empty State vs Groups Grid */}
+        {groups.length === 0 ? (
+          <div className="p-8 sm:p-12 text-center bg-dark-card border border-dark-border rounded-3xl space-y-5">
+            <div className="w-20 h-20 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-inner">
+              <Users className="w-10 h-10" />
+            </div>
+            <div className="space-y-1.5 max-w-sm mx-auto">
+              <h3 className="text-xl font-bold text-white">Noch keine Gruppen vorhanden</h3>
+              <p className="text-xs sm:text-sm text-gray-400">
+                Erstelle deine erste Gruppe für den nächsten Urlaub, eure WG, ein Restaurant-Essen oder teste die App direkt.
+              </p>
+            </div>
 
-            return (
-              <Link
-                key={group.id}
-                href={`/groups/${group.id}`}
-                className="p-5 bg-dark-card hover:bg-dark-elevated border border-dark-border rounded-3xl shadow-lg transition-all active:scale-[0.99] group flex flex-col justify-between"
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 max-w-md mx-auto">
+              <button
+                type="button"
+                onClick={() => setCreateGroupOpen(true)}
+                className="w-full sm:w-auto py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all active:scale-95"
               >
-                <div>
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-bold text-lg text-white group-hover:text-emerald-300 transition-colors">
-                      {group.name}
-                    </h3>
-                    <span
-                      className={`text-sm font-extrabold px-2.5 py-1 rounded-xl border ${
-                        myGroupBalance > 0
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                          : myGroupBalance < 0
-                          ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                          : 'bg-white/5 border-white/10 text-gray-400'
-                      }`}
-                    >
-                      {myGroupBalance > 0 ? `+${formatCurrency(myGroupBalance)}` : formatCurrency(myGroupBalance)}
-                    </span>
-                  </div>
+                <Plus className="w-4 h-4" />
+                <span>Erste Gruppe erstellen</span>
+              </button>
 
-                  {group.description && (
-                    <p className="text-xs text-gray-400 mt-1.5 line-clamp-1">{group.description}</p>
-                  )}
-                </div>
+              <button
+                type="button"
+                onClick={handleLoadDemo}
+                className="w-full sm:w-auto py-3 px-4 rounded-2xl bg-dark-elevated hover:bg-white/5 border border-dark-border text-gray-300 font-semibold text-xs flex items-center justify-center gap-2 transition-all"
+              >
+                <Database className="w-3.5 h-3.5 text-purple-400" />
+                <span>Beispieldaten laden</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {groups.map((group) => {
+              const groupData = store.getGroupById(group.id);
+              const members = groupData?.members || [];
+              const expenses = store.getGroupExpenses(group.id);
+              const settlements = store.getGroupSettlements(group.id);
+              const balances = calculateUserBalances(
+                members.map((m) => m.profile),
+                expenses,
+                settlements
+              );
+              const myGroupBalance = balances[currentUser.id]?.netBalance || 0;
 
-                <div className="flex items-center justify-between pt-4 mt-4 border-t border-dark-border/50">
-                  {/* Member avatars */}
-                  <div className="flex items-center -space-x-2">
-                    {members.slice(0, 4).map((m) => (
-                      <Avatar
-                        key={m.user_id}
-                        name={m.profile.display_name}
-                        size="sm"
-                        className="border-2 border-dark-card"
-                      />
-                    ))}
-                    {members.length > 4 && (
-                      <div className="w-7 h-7 rounded-full bg-dark-elevated border-2 border-dark-card flex items-center justify-center text-[10px] font-bold text-gray-300">
-                        +{members.length - 4}
+              return (
+                <Link
+                  key={group.id}
+                  href={`/groups/${group.id}`}
+                  className="p-5 bg-dark-card hover:bg-dark-elevated border border-dark-border rounded-3xl shadow-lg transition-all active:scale-[0.99] group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-2xl flex-shrink-0">{group.emoji || '💰'}</span>
+                        <h3 className="font-bold text-lg text-white group-hover:text-emerald-300 transition-colors truncate">
+                          {group.name}
+                        </h3>
                       </div>
+                      <span
+                        className={`text-sm font-extrabold px-2.5 py-1 rounded-xl border flex-shrink-0 ${
+                          myGroupBalance > 0
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            : myGroupBalance < 0
+                            ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                            : 'bg-white/5 border-white/10 text-gray-400'
+                        }`}
+                      >
+                        {myGroupBalance > 0 ? `+${formatCurrency(myGroupBalance, group.currency)}` : formatCurrency(myGroupBalance, group.currency)}
+                      </span>
+                    </div>
+
+                    {group.description && (
+                      <p className="text-xs text-gray-400 mt-2 line-clamp-1">{group.description}</p>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 text-xs font-semibold text-emerald-400 group-hover:translate-x-0.5 transition-transform">
-                    <span>Öffnen</span>
-                    <ChevronRight className="w-4 h-4" />
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-dark-border/50">
+                    {/* Member avatars */}
+                    <div className="flex items-center -space-x-2">
+                      {members.slice(0, 4).map((m) => (
+                        <Avatar
+                          key={m.user_id}
+                          name={m.profile.display_name}
+                          avatarEmoji={m.profile.avatar_emoji}
+                          size="sm"
+                          className="border-2 border-dark-card"
+                        />
+                      ))}
+                      {members.length > 4 && (
+                        <div className="w-7 h-7 rounded-full bg-dark-elevated border-2 border-dark-card flex items-center justify-center text-[10px] font-bold text-gray-300">
+                          +{members.length - 4}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 text-xs font-semibold text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+                      <span>Öffnen</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
                   </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <CreateGroupModal isOpen={createGroupOpen} onClose={() => setCreateGroupOpen(false)} />
+      <WelcomeModal isOpen={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
       <BottomNav onAddClick={() => setCreateGroupOpen(true)} />
     </div>
   );

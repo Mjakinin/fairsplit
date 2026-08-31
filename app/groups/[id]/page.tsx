@@ -11,10 +11,12 @@ import { AddExpenseModal } from '@/components/expenses/AddExpenseModal';
 import { DebtSimplificationCard } from '@/components/settlements/DebtSimplificationCard';
 import { ActivityFeed } from '@/components/activity/ActivityFeed';
 import { GroupInviteModal } from '@/components/qr/GroupInviteModal';
+import { GroupSettingsModal } from '@/components/groups/GroupSettingsModal';
+import { GroupAnalyticsModal } from '@/components/groups/GroupAnalyticsModal';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { 
   Receipt, Scale, History, Plus, QrCode, ArrowLeft, 
-  Users, UserPlus, Sparkles 
+  Users, UserPlus, Sparkles, Settings, BarChart3 
 } from 'lucide-react';
 
 export default function GroupDetailPage() {
@@ -29,6 +31,9 @@ export default function GroupDetailPage() {
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'activity'>('expenses');
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+
   const [newMemberName, setNewMemberName] = useState('');
   const [showAddMemberInput, setShowAddMemberInput] = useState(false);
 
@@ -94,9 +99,12 @@ export default function GroupDetailPage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                {group.name}
-              </h1>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{group.emoji || '💰'}</span>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                  {group.name}
+                </h1>
+              </div>
               {group.description && (
                 <p className="text-xs sm:text-sm text-gray-400 mt-0.5">{group.description}</p>
               )}
@@ -104,21 +112,38 @@ export default function GroupDetailPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => setAnalyticsOpen(true)}
+              className="p-2.5 rounded-xl bg-dark-elevated hover:bg-white/10 text-gray-300 border border-dark-border hover:border-white/20 transition-all active:scale-95"
+              title="Statistik & Auswertung"
+            >
+              <BarChart3 className="w-4 h-4 text-emerald-400" />
+            </button>
+
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="p-2.5 rounded-xl bg-dark-elevated hover:bg-white/10 text-gray-300 border border-dark-border hover:border-white/20 transition-all active:scale-95"
+              title="Gruppeneinstellungen"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+
             <button
               onClick={() => setInviteOpen(true)}
               className="p-2.5 rounded-xl bg-dark-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/30 transition-all active:scale-95"
               title="QR-Code & Einladungslink"
             >
-              <QrCode className="w-5 h-5" />
+              <QrCode className="w-4 h-4" />
             </button>
 
             <button
               onClick={() => setAddExpenseOpen(true)}
-              className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-950/40 flex items-center gap-2 transition-all active:scale-95"
+              className="py-2.5 px-3.5 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-950/40 flex items-center gap-1.5 transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              <span>Ausgabe erfassen</span>
+              <span className="hidden sm:inline">Ausgabe erfassen</span>
+              <span className="sm:hidden">+ Neu</span>
             </button>
           </div>
         </div>
@@ -126,7 +151,7 @@ export default function GroupDetailPage() {
         {/* Member Avatars & Add Member inline */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-dark-border/50 text-xs">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-gray-400 font-semibold flex items-center gap-1.5 mr-1">
+            <span className="text-gray-400 font-semibold flex items-center gap-1 mr-1">
               <Users className="w-3.5 h-3.5" />
               <span>{members.length} Mitglieder:</span>
             </span>
@@ -135,7 +160,7 @@ export default function GroupDetailPage() {
                 key={m.user_id}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-elevated border border-dark-border/80 text-gray-200"
               >
-                <Avatar name={m.profile.display_name} size="sm" className="w-4 h-4 text-[9px]" />
+                <Avatar name={m.profile.display_name} avatarEmoji={m.profile.avatar_emoji} size="sm" className="w-4 h-4 text-[9px]" />
                 <span>{m.profile.display_name}</span>
               </span>
             ))}
@@ -192,6 +217,7 @@ export default function GroupDetailPage() {
             members={members}
             expenses={expenses}
             settlements={settlements}
+            currency={group.currency}
           />
         )}
 
@@ -204,6 +230,7 @@ export default function GroupDetailPage() {
       <AddExpenseModal
         groupId={groupId}
         members={members}
+        currency={group.currency}
         isOpen={addExpenseOpen}
         onClose={() => setAddExpenseOpen(false)}
       />
@@ -212,6 +239,21 @@ export default function GroupDetailPage() {
         group={group}
         isOpen={inviteOpen}
         onClose={() => setInviteOpen(false)}
+      />
+
+      <GroupSettingsModal
+        group={group}
+        members={members}
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
+
+      <GroupAnalyticsModal
+        group={group}
+        members={members}
+        expenses={expenses}
+        isOpen={analyticsOpen}
+        onClose={() => setAnalyticsOpen(false)}
       />
 
       <BottomNav onAddClick={() => setAddExpenseOpen(true)} />

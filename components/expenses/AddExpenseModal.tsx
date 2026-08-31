@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { GroupMember, Expense, SplitMode, TipType, SurchargeSplitMode, ExpenseItem } from '@/lib/types';
+import { GroupMember, Expense, SplitMode, TipType, SurchargeSplitMode, ExpenseItem, CurrencyCode } from '@/lib/types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { formatCurrency } from '@/lib/utils/format';
@@ -9,17 +9,18 @@ import { Avatar } from '../ui/Avatar';
 import { calculateItemizedSplit } from '@/lib/algorithms/itemizedSplit';
 import { 
   Utensils, ShoppingCart, Car, Building2, Ticket, Receipt, Plus, Trash2, 
-  Percent, Sparkles, Check, Users, DollarSign, Calculator 
+  Percent, Sparkles, Check, Users, DollarSign, Calculator, Camera, Coffee, Zap 
 } from 'lucide-react';
 
 interface AddExpenseModalProps {
   groupId: string;
   members: GroupMember[];
+  currency?: CurrencyCode;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpenseModalProps) {
+export function AddExpenseModal({ groupId, members, currency = 'EUR', isOpen, onClose }: AddExpenseModalProps) {
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
 
@@ -35,24 +36,27 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
 
   // Mode A: Quick Split state
   const [quickAmount, setQuickAmount] = useState('');
-  const [quickSplitType, setQuickSplitType] = useState<'equal' | 'exact' | 'percentage'>('equal');
+  const [quickSplitType, setQuickSplitType] = useState<'equal' | 'exact' | 'percentage' | 'shares'>('equal');
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(members.map((m) => m.user_id));
   const [exactAmounts, setExactAmounts] = useState<Record<string, string>>({});
   const [percentages, setPercentages] = useState<Record<string, string>>({});
+  const [shares, setShares] = useState<Record<string, string>>(
+    Object.fromEntries(members.map((m) => [m.user_id, '1']))
+  );
 
   // Mode B: Itemized Receipt state
   const [items, setItems] = useState<ExpenseItem[]>([
     {
       id: 'item-1',
       name: 'Hauptgericht / Pizza',
-      price: 15.5,
+      price: 16.5,
       quantity: 1,
       assignments: members.map((m) => ({ user_id: m.user_id, share_count: 1 })),
     },
     {
       id: 'item-2',
       name: 'Getränke / Wein',
-      price: 18.0,
+      price: 14.0,
       quantity: 1,
       assignments: members.map((m) => ({ user_id: m.user_id, share_count: 1 })),
     },
@@ -77,7 +81,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
   // Add Item
   const handleAddItem = () => {
     const newItem: ExpenseItem = {
-      id: `item-${Date.now()}`,
+      id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 3)}`,
       name: '',
       price: 0,
       quantity: 1,
@@ -146,6 +150,44 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
     );
   };
 
+  // Simulated OCR / Mock receipt scan
+  const handleSimulateScan = () => {
+    setTitle('Restaurant Trattoria Bella');
+    setCategory('restaurant');
+    setItems([
+      {
+        id: `item-${Date.now()}-1`,
+        name: 'Pizza Margherita',
+        price: 11.50,
+        quantity: 1,
+        assignments: members.slice(0, 1).map((m) => ({ user_id: m.user_id, share_count: 1 })),
+      },
+      {
+        id: `item-${Date.now()}-2`,
+        name: 'Pasta Carbonara',
+        price: 14.00,
+        quantity: 1,
+        assignments: members.slice(1, 2).map((m) => ({ user_id: m.user_id, share_count: 1 })),
+      },
+      {
+        id: `item-${Date.now()}-3`,
+        name: 'Flasche Chianti Rotwein',
+        price: 26.00,
+        quantity: 1,
+        assignments: members.map((m) => ({ user_id: m.user_id, share_count: 1 })),
+      },
+      {
+        id: `item-${Date.now()}-4`,
+        name: '2x Espresso',
+        price: 6.00,
+        quantity: 1,
+        assignments: members.slice(0, 2).map((m) => ({ user_id: m.user_id, share_count: 1 })),
+      },
+    ]);
+    setTipType('percentage');
+    setTipValue(10);
+  };
+
   // Submit Handler
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,7 +198,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
     }
 
     let finalTotal = 0;
-    let finalSplits: { user_id: string; owed_amount: number }[] = [];
+    let finalSplits: { user_id: string; owed_amount: number; shares?: number; percentage?: number }[] = [];
     let finalSplitMode: SplitMode = mode === 'itemized' ? 'itemized' : quickSplitType;
 
     if (mode === 'itemized') {
@@ -191,6 +233,20 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
           return {
             user_id: m.user_id,
             owed_amount: Math.round((finalTotal * (pct / 100)) * 100) / 100,
+            percentage: pct,
+          };
+        });
+      } else if (quickSplitType === 'shares') {
+        const totalShares = members.reduce(
+          (acc, m) => acc + (parseFloat(shares[m.user_id] || '1') || 0),
+          0
+        ) || 1;
+        finalSplits = members.map((m) => {
+          const userShare = parseFloat(shares[m.user_id] || '1') || 0;
+          return {
+            user_id: m.user_id,
+            owed_amount: Math.round((finalTotal * (userShare / totalShares)) * 100) / 100,
+            shares: userShare,
           };
         });
       }
@@ -210,7 +266,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
 
       const sumPaid = finalPayers.reduce((acc, p) => acc + p.amount_paid, 0);
       if (Math.abs(sumPaid - finalTotal) > 0.05) {
-        alert(`Die Summe der gezahlten Beträge (${sumPaid.toFixed(2)} €) stimmt nicht mit dem Gesamtbetrag (${finalTotal.toFixed(2)} €) überein.`);
+        alert(`Die Summe der gezahlten Beträge (${sumPaid.toFixed(2)} ${currency}) stimmt nicht mit dem Gesamtbetrag (${finalTotal.toFixed(2)} ${currency}) überein.`);
         return;
       }
     }
@@ -221,7 +277,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
       category,
       split_mode: finalSplitMode,
       total_amount: finalTotal,
-      currency: 'EUR',
+      currency,
       tip_amount: mode === 'itemized' ? itemizedResult.tipAmount : 0,
       tip_type: tipType,
       tip_percentage: tipType === 'percentage' ? tipValue : undefined,
@@ -246,32 +302,45 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
       maxHeight="max-h-[95vh]"
     >
       <form onSubmit={handleSubmit} className="space-y-6 py-1">
-        {/* Mode Selector */}
-        <div className="grid grid-cols-2 gap-2 p-1 bg-dark-elevated rounded-2xl border border-dark-border">
-          <button
-            type="button"
-            onClick={() => setMode('itemized')}
-            className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-semibold text-sm transition-all ${
-              mode === 'itemized'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-950/40'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <Receipt className="w-4 h-4" />
-            <span>Beleg-Splitter</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('quick')}
-            className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-semibold text-sm transition-all ${
-              mode === 'quick'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950/40'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <Calculator className="w-4 h-4" />
-            <span>Schnell-Split</span>
-          </button>
+        {/* Mode Selector & OCR Demo Button */}
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2 p-1 bg-dark-elevated rounded-2xl border border-dark-border">
+            <button
+              type="button"
+              onClick={() => setMode('itemized')}
+              className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-semibold text-sm transition-all ${
+                mode === 'itemized'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-950/40'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Receipt className="w-4 h-4" />
+              <span>Beleg-Splitter</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('quick')}
+              className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-semibold text-sm transition-all ${
+                mode === 'quick'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950/40'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Calculator className="w-4 h-4" />
+              <span>Schnell-Split</span>
+            </button>
+          </div>
+
+          {mode === 'itemized' && (
+            <button
+              type="button"
+              onClick={handleSimulateScan}
+              className="w-full py-2 px-3 rounded-xl bg-purple-950/30 hover:bg-purple-900/40 border border-purple-500/30 text-purple-300 text-xs font-semibold flex items-center justify-center gap-2 transition-all"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Beleg-Scan simulieren (Beispiel-Restaurantposten laden)</span>
+            </button>
+          )}
         </div>
 
         {/* Title & Category & Date */}
@@ -286,8 +355,8 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="z. B. Abendessen Bella Italia, Airbnb oder Wocheneinkauf"
-              className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
+              placeholder="z. B. Restaurant Bella Italia, Wocheneinkauf, Tanken"
+              className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 font-semibold"
             />
           </div>
 
@@ -299,13 +368,15 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as any)}
-                className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm"
               >
                 <option value="restaurant">🍕 Restaurant / Bar</option>
                 <option value="groceries">🛒 Supermarkt / Einkäufe</option>
                 <option value="transport">🚗 Fahrt / Taxi / Tanken</option>
                 <option value="hotel">🏨 Unterkunft / Hotel</option>
                 <option value="entertainment">🎟️ Freizeit / Tickets</option>
+                <option value="cafe">☕ Café / Bäckerei</option>
+                <option value="household">⚡ Haushalt & WG</option>
                 <option value="general">🧾 Sonstiges</option>
               </select>
             </div>
@@ -317,7 +388,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
                 type="date"
                 value={expenseDate}
                 onChange={(e) => setExpenseDate(e.target.value)}
-                className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm"
               />
             </div>
           </div>
@@ -328,35 +399,39 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
           <div className="space-y-4 p-4 bg-dark-elevated rounded-2xl border border-dark-border">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                Gesamtbetrag (€) *
+                Gesamtbetrag ({currency}) *
               </label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={quickAmount}
-                onChange={(e) => setQuickAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full bg-dark-card border border-dark-border rounded-xl px-4 py-3 text-2xl font-bold text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={quickAmount}
+                  onChange={(e) => setQuickAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-dark-card border border-dark-border rounded-2xl px-4 py-3 text-3xl font-extrabold text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
+                />
+                <span className="absolute right-4 top-3.5 text-gray-400 text-xl font-bold">{currency}</span>
+              </div>
             </div>
 
-            {/* Split Type */}
+            {/* Split Type Selector */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
                 Aufteilungsmethode
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {[
-                  { id: 'equal', label: 'Gleichmäßig' },
-                  { id: 'exact', label: 'Genaue Beträge' },
-                  { id: 'percentage', label: 'Prozentual' },
+                  { id: 'equal', label: 'Gleich' },
+                  { id: 'exact', label: 'Genau' },
+                  { id: 'percentage', label: '%' },
+                  { id: 'shares', label: 'Anteile' },
                 ].map((st) => (
                   <button
                     key={st.id}
                     type="button"
                     onClick={() => setQuickSplitType(st.id as any)}
-                    className={`py-2 px-2 rounded-xl text-xs font-medium border transition-all ${
+                    className={`py-2 px-1.5 rounded-xl text-xs font-semibold border transition-all ${
                       quickSplitType === st.id
                         ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
                         : 'bg-dark-card border-dark-border text-gray-400'
@@ -394,13 +469,35 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
                             : 'bg-dark-card border-dark-border text-gray-500 opacity-60'
                         }`}
                       >
-                        <Avatar name={m.profile.display_name} size="sm" />
+                        <Avatar name={m.profile.display_name} avatarEmoji={m.profile.avatar_emoji} size="sm" />
                         <span>{m.profile.display_name}</span>
                         {isSelected && <Check className="w-3.5 h-3.5" />}
                       </button>
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Shares Split Inputs */}
+            {quickSplitType === 'shares' && (
+              <div className="space-y-2">
+                <div className="text-xs text-gray-400 font-medium">Anteile pro Person (z. B. 2x oder 1x):</div>
+                {members.map((m) => (
+                  <div key={m.user_id} className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-gray-300">{m.profile.display_name}</span>
+                    <div className="relative w-24">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={shares[m.user_id] || '1'}
+                        onChange={(e) => setShares({ ...shares, [m.user_id]: e.target.value })}
+                        className="w-full bg-dark-card border border-dark-border rounded-xl px-3 py-1.5 text-sm text-white font-bold text-center focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -450,7 +547,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
                         placeholder="0.00"
                         className="w-full bg-dark-card border border-dark-border rounded-xl pl-3 pr-7 py-2 text-sm font-bold text-white text-right placeholder:text-gray-600 focus:outline-none focus:border-purple-500"
                       />
-                      <span className="absolute right-2.5 top-2 text-gray-400 text-xs font-bold">€</span>
+                      <span className="absolute right-2.5 top-2 text-gray-400 text-xs font-bold">{currency === 'EUR' ? '€' : currency}</span>
                     </div>
                     {items.length > 1 && (
                       <button
@@ -471,7 +568,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
                         <button
                           type="button"
                           onClick={() => setAllParticipantsForItem(item.id)}
-                          className="text-[11px] text-purple-400 hover:underline"
+                          className="text-[11px] text-purple-400 hover:underline font-medium"
                         >
                           Alle
                         </button>
@@ -479,7 +576,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
                         <button
                           type="button"
                           onClick={() => setOnlyMeForItem(item.id)}
-                          className="text-[11px] text-purple-400 hover:underline"
+                          className="text-[11px] text-purple-400 hover:underline font-medium"
                         >
                           Nur ich
                         </button>
@@ -499,7 +596,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
                                 : 'bg-dark-card border-dark-border text-gray-500 opacity-50'
                             }`}
                           >
-                            <Avatar name={m.profile.display_name} size="sm" className="w-4 h-4 text-[9px]" />
+                            <Avatar name={m.profile.display_name} avatarEmoji={m.profile.avatar_emoji} size="sm" className="w-4 h-4 text-[9px]" />
                             <span>{m.profile.display_name}</span>
                             {isAssigned && <Check className="w-3 h-3 text-purple-400" />}
                           </button>
@@ -523,6 +620,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
                     { label: '5%', val: 5 },
                     { label: '10%', val: 10 },
                     { label: '15%', val: 15 },
+                    { label: '20%', val: 20 },
                   ].map((tip) => (
                     <button
                       key={tip.val}
@@ -577,17 +675,17 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
             <div className="p-4 bg-purple-950/20 rounded-2xl border border-purple-500/30 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-400">Einzelposten Summe:</span>
-                <span className="font-semibold text-white">{formatCurrency(itemizedResult.itemsSubtotal)}</span>
+                <span className="font-semibold text-white">{formatCurrency(itemizedResult.itemsSubtotal, currency)}</span>
               </div>
               {itemizedResult.tipAmount > 0 && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-purple-300">Trinkgeld ({tipValue}%):</span>
-                  <span className="font-semibold text-purple-300">+{formatCurrency(itemizedResult.tipAmount)}</span>
+                  <span className="font-semibold text-purple-300">+{formatCurrency(itemizedResult.tipAmount, currency)}</span>
                 </div>
               )}
               <div className="flex items-center justify-between text-base pt-2 border-t border-purple-500/20 font-bold">
                 <span className="text-white">Gesamtrechnung:</span>
-                <span className="text-xl text-purple-300">{formatCurrency(itemizedResult.totalAmount)}</span>
+                <span className="text-xl text-purple-300">{formatCurrency(itemizedResult.totalAmount, currency)}</span>
               </div>
 
               {/* Per user preview */}
@@ -604,7 +702,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
                         <span className="text-gray-300 truncate max-w-[90px]">
                           {profile?.display_name || 'Mitglied'}
                         </span>
-                        <span className="font-bold text-white">{formatCurrency(split.totalOwed)}</span>
+                        <span className="font-bold text-white">{formatCurrency(split.totalOwed, currency)}</span>
                       </div>
                     );
                   })}
@@ -624,7 +722,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
             <button
               type="button"
               onClick={() => setIsMultiPayer(!isMultiPayer)}
-              className="text-xs text-emerald-400 hover:underline font-medium"
+              className="text-xs text-emerald-400 hover:underline font-semibold"
             >
               {isMultiPayer ? 'Nur eine Person' : 'Mehrere Personen'}
             </button>
@@ -660,7 +758,7 @@ export function AddExpenseModal({ groupId, members, isOpen, onClose }: AddExpens
                       }
                       className="w-full bg-dark-card border border-dark-border rounded-xl pl-3 pr-7 py-2 text-sm text-white font-bold text-right focus:outline-none focus:border-emerald-500"
                     />
-                    <span className="absolute right-2.5 top-2 text-gray-400 text-xs font-bold">€</span>
+                    <span className="absolute right-2.5 top-2 text-gray-400 text-xs font-bold">{currency === 'EUR' ? '€' : currency}</span>
                   </div>
                 </div>
               ))}

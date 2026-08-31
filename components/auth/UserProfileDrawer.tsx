@@ -1,30 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { Avatar } from '../ui/Avatar';
-import { User, CreditCard, Check, RefreshCw, Smartphone } from 'lucide-react';
+import { User, CreditCard, Check, Sparkles, Trash2, Database, Smartphone } from 'lucide-react';
 
 interface UserProfileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const AVATAR_EMOJIS = ['😎', '🚀', '🍕', '🦊', '⚡', '🌸', '🥑', '🤠', '🐼', '🏄', '🎨', '🦁'];
+
 export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
 
   const [displayName, setDisplayName] = useState(currentUser.display_name);
+  const [selectedEmoji, setSelectedEmoji] = useState(currentUser.avatar_emoji || '😎');
   const [paypalHandle, setPaypalHandle] = useState(currentUser.paypal_me_handle || '');
   const [iban, setIban] = useState(currentUser.iban || '');
   const [bic, setBic] = useState(currentUser.bic || '');
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    if (isOpen) {
+      setDisplayName(currentUser.display_name);
+      setSelectedEmoji(currentUser.avatar_emoji || '😎');
+      setPaypalHandle(currentUser.paypal_me_handle || '');
+      setIban(currentUser.iban || '');
+      setBic(currentUser.bic || '');
+    }
+  }, [isOpen, currentUser]);
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     store.updateProfile({
-      display_name: displayName,
+      display_name: displayName.trim() || 'Ich',
+      avatar_emoji: selectedEmoji,
       paypal_me_handle: paypalHandle.replace(/^@/, '').trim() || null,
       iban: iban.trim() || null,
       bic: bic.trim() || null,
@@ -33,7 +47,21 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
     setTimeout(() => {
       setSaved(false);
       onClose();
-    }, 600);
+    }, 500);
+  };
+
+  const handleLoadDemoData = () => {
+    if (confirm('Möchtest du die Beispieldaten (Alpen-Wochenende mit 4 Mitgliedern & Beleg) laden?')) {
+      store.loadDemoSeedData();
+      onClose();
+    }
+  };
+
+  const handleClearAll = () => {
+    if (confirm('Möchtest du wirklich alle lokalen Daten und Gruppen löschen?')) {
+      store.clearAllData();
+      onClose();
+    }
   };
 
   return (
@@ -44,13 +72,37 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
       subtitle="Für automatische 1-Klick Rückzahlungen & GiroCodes"
     >
       <form onSubmit={handleSave} className="space-y-4 py-2">
+        {/* Profile Card */}
         <div className="flex items-center gap-4 p-4 bg-dark-elevated rounded-2xl border border-dark-border">
-          <Avatar name={currentUser.display_name} size="lg" />
-          <div>
-            <div className="font-bold text-white text-lg">{currentUser.display_name}</div>
+          <Avatar name={displayName} avatarEmoji={selectedEmoji} size="lg" />
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-white text-base truncate">{displayName}</div>
             <div className="text-xs text-emerald-400 font-medium">
               {currentUser.is_guest ? 'Gast-Konto (Lokal aktiv)' : currentUser.email || 'Registrierter Nutzer'}
             </div>
+          </div>
+        </div>
+
+        {/* Emoji Picker */}
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
+            Avatar Emoji
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {AVATAR_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => setSelectedEmoji(emoji)}
+                className={`w-9 h-9 rounded-xl text-base flex items-center justify-center border transition-all ${
+                  selectedEmoji === emoji
+                    ? 'bg-emerald-500/20 border-emerald-500 scale-105'
+                    : 'bg-dark-card border-dark-border text-gray-400'
+                }`}
+              >
+                {emoji}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -63,7 +115,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
             required
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm font-medium"
           />
         </div>
 
@@ -73,13 +125,13 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
             <span className="text-gray-500 normal-case font-normal">Optional</span>
           </label>
           <div className="relative">
-            <span className="absolute left-4 top-3.5 text-gray-500 text-sm">paypal.me/</span>
+            <span className="absolute left-4 top-3 text-gray-500 text-sm">paypal.me/</span>
             <input
               type="text"
               value={paypalHandle}
               onChange={(e) => setPaypalHandle(e.target.value)}
               placeholder="deinName"
-              className="w-full bg-dark-elevated border border-dark-border rounded-xl pl-28 pr-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-dark-elevated border border-dark-border rounded-xl pl-28 pr-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
             />
           </div>
         </div>
@@ -94,7 +146,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
             value={iban}
             onChange={(e) => setIban(e.target.value)}
             placeholder="DE89 3704 0044 0532 0130 00"
-            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white font-mono placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-2.5 text-white font-mono placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
           />
         </div>
 
@@ -108,42 +160,13 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
             value={bic}
             onChange={(e) => setBic(e.target.value)}
             placeholder="COBADEFFXXX"
-            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white font-mono placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-2.5 text-white font-mono placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
           />
-        </div>
-
-        {/* Demo Switcher Helper */}
-        <div className="pt-2">
-          <div className="text-xs text-gray-400 mb-2 font-medium">Zwischen Test-Nutzern wechseln:</div>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { id: 'user-maxim', name: 'Maxim M.' },
-              { id: 'user-linda', name: 'Linda K.' },
-              { id: 'user-jonas', name: 'Jonas W.' },
-              { id: 'user-sarah', name: 'Sarah B.' },
-            ].map((u) => (
-              <button
-                key={u.id}
-                type="button"
-                onClick={() => {
-                  store.loginAsGuest(u.name);
-                  setDisplayName(u.name);
-                }}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
-                  currentUser.display_name.startsWith(u.name.split(' ')[0])
-                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                    : 'bg-dark-elevated border-dark-border text-gray-400 hover:text-white'
-                }`}
-              >
-                {u.name}
-              </button>
-            ))}
-          </div>
         </div>
 
         <button
           type="submit"
-          className="w-full mt-4 py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition-all active:scale-[0.98]"
+          className="w-full mt-2 py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition-all active:scale-[0.98]"
         >
           {saved ? (
             <>
@@ -151,9 +174,32 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
               <span>Gespeichert!</span>
             </>
           ) : (
-            <span>Änderungen speichern</span>
+            <span>Profil speichern</span>
           )}
         </button>
+
+        {/* Developer & Test Actions */}
+        <div className="pt-4 border-t border-dark-border/60 space-y-2">
+          <div className="text-xs text-gray-400 font-medium">Testen & Datenverwaltung:</div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={handleLoadDemoData}
+              className="py-2 px-3 rounded-xl bg-dark-card hover:bg-dark-elevated border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>Demo laden</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="py-2 px-3 rounded-xl bg-dark-card hover:bg-rose-950/20 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Alles leeren</span>
+            </button>
+          </div>
+        </div>
       </form>
     </BottomSheet>
   );

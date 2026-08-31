@@ -1,9 +1,20 @@
-export type CurrencyCode = 'EUR' | 'USD' | 'CHF' | 'GBP';
+export type CurrencyCode = 'EUR' | 'CHF' | 'USD' | 'GBP';
 
 export type SplitMode = 'equal' | 'exact' | 'percentage' | 'shares' | 'itemized';
 export type TipType = 'fixed' | 'percentage';
 export type SurchargeSplitMode = 'proportional' | 'equal';
-export type PaymentMethod = 'cash' | 'paypal' | 'sepa' | 'other';
+export type PaymentMethod = 'paypal' | 'sepa' | 'cash' | 'revolut' | 'other';
+
+export type ExpenseCategory = 
+  | 'restaurant' 
+  | 'groceries' 
+  | 'transport' 
+  | 'hotel' 
+  | 'entertainment' 
+  | 'cafe' 
+  | 'household' 
+  | 'general' 
+  | 'other';
 
 export interface Profile {
   id: string;
@@ -11,6 +22,7 @@ export interface Profile {
   email?: string | null;
   display_name: string;
   avatar_url?: string | null;
+  avatar_emoji?: string | null;
   is_guest: boolean;
   paypal_me_handle?: string | null;
   iban?: string | null;
@@ -22,6 +34,7 @@ export interface Profile {
 export interface Group {
   id: string;
   name: string;
+  emoji?: string;
   description?: string | null;
   currency: CurrencyCode;
   invite_token: string;
@@ -71,6 +84,8 @@ export interface ExpenseSplit {
   expense_id?: string;
   user_id: string;
   owed_amount: number;
+  shares?: number;
+  percentage?: number;
   profile?: Profile;
 }
 
@@ -79,7 +94,7 @@ export interface Expense {
   group_id: string;
   title: string;
   description?: string | null;
-  category: 'restaurant' | 'groceries' | 'transport' | 'hotel' | 'entertainment' | 'general' | 'other';
+  category: ExpenseCategory;
   split_mode: SplitMode;
   total_amount: number;
   currency: CurrencyCode;
@@ -101,8 +116,8 @@ export interface Expense {
 export interface Settlement {
   id: string;
   group_id: string;
-  payer_id: string; // The person who is paying to settle debt
-  payee_id: string; // The person receiving the money
+  payer_id: string; // The debtor
+  payee_id: string; // The creditor
   amount: number;
   currency: CurrencyCode;
   payment_method: PaymentMethod;
@@ -123,7 +138,9 @@ export interface ActivityLog {
     | 'expense_updated' 
     | 'expense_deleted' 
     | 'settlement_created' 
+    | 'settlement_deleted'
     | 'member_joined' 
+    | 'member_removed'
     | 'group_updated';
   entity_type: 'expense' | 'settlement' | 'group_member' | 'group';
   entity_id?: string;
@@ -143,7 +160,7 @@ export interface SimplifiedDebt {
 
 export interface UserBalance {
   user: Profile;
-  netBalance: number; // positive = gets money back, negative = owes money
+  netBalance: number;
   totalPaid: number;
   totalOwed: number;
   totalSettledPaid: number;
