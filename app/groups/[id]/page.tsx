@@ -4,19 +4,22 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useFairSplitStore } from '@/lib/supabase/store';
+import { calculateUserBalances, simplifyDebts } from '@/lib/algorithms/debtSimplification';
+import { formatCurrency } from '@/lib/utils/format';
 import { Tabs } from '@/components/ui/Tabs';
 import { Avatar } from '@/components/ui/Avatar';
 import { ExpenseList } from '@/components/expenses/ExpenseList';
 import { AddExpenseModal } from '@/components/expenses/AddExpenseModal';
-import { DebtSimplificationCard } from '@/components/settlements/DebtSimplificationCard';
 import { ActivityFeed } from '@/components/activity/ActivityFeed';
 import { GroupInviteModal } from '@/components/qr/GroupInviteModal';
 import { GroupSettingsModal } from '@/components/groups/GroupSettingsModal';
 import { GroupAnalyticsModal } from '@/components/groups/GroupAnalyticsModal';
+import { SettleUpModal } from '@/components/settlements/SettleUpModal';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { 
-  Receipt, Scale, History, Plus, QrCode, ArrowLeft, 
-  Users, UserPlus, Sparkles, Settings, BarChart3, Share2 
+  Receipt, History, Plus, QrCode, ArrowLeft, 
+  Users, UserPlus, Sparkles, Settings, BarChart3, 
+  ArrowRight, CheckCircle2, TrendingUp, TrendingDown, Wallet
 } from 'lucide-react';
 
 export default function GroupDetailPage() {
@@ -28,11 +31,18 @@ export default function GroupDetailPage() {
   const group = store.getGroupById(groupId);
   const currentUser = store.getCurrentUser();
 
-  const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'activity'>('expenses');
+  const [activeTab, setActiveTab] = useState<'expenses' | 'activity'>('expenses');
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+
+  // Settle up modal state
+  const [settleTarget, setSettleTarget] = useState<{
+    payerId: string;
+    payeeId: string;
+    amount: number;
+  } | null>(null);
 
   if (!group) {
     return (
@@ -55,6 +65,13 @@ export default function GroupDetailPage() {
   const settlements = store.getGroupSettlements(groupId);
   const activityLogs = store.getGroupActivity(groupId);
 
+  // Balances calculation
+  const memberProfiles = members.map((m) => m.profile);
+  const balances = calculateUserBalances(memberProfiles, expenses, settlements);
+  const simplified = simplifyDebts(balances, group.currency);
+  const myNetBalance = balances[currentUser.id]?.netBalance || 0;
+
+  // Tabs: only Ausgaben and Verlauf
   const tabs = [
     {
       id: 'expenses',
@@ -63,13 +80,8 @@ export default function GroupDetailPage() {
       badge: expenses.length,
     },
     {
-      id: 'balances',
-      label: 'Schulden & Ausgleich',
-      icon: <Scale className="w-4 h-4" />,
-    },
-    {
       id: 'activity',
-      label: 'Verlauf',
+      label: 'Verlauf & Zahlungen',
       icon: <History className="w-4 h-4" />,
       badge: activityLogs.length > 0 ? activityLogs.length : undefined,
     },
@@ -77,8 +89,9 @@ export default function GroupDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-5 space-y-6">
-      {/* Group Header Card */}
-      <div className="p-5 sm:p-6 bg-dark-card border border-dark-border rounded-3xl shadow-xl space-y-4">
+      {/* 1. Group Header & Top Balance Hero */}
+      <div className="p-5 sm:p-6 bg-dark-card border border-dark-border rounded-3xl shadow-xl space-y-5">
+        {/* Title & Navigation */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link
@@ -131,41 +144,195 @@ export default function GroupDetailPage() {
               className="py-2.5 px-3.5 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-950/40 flex items-center gap-1.5 transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Ausgabe erfassen</span>
-              <span className="sm:hidden">+ Neu</span>
+              <span>+ Ausgabe</span>
             </button>
           </div>
         </div>
 
-        {/* Member Avatars & Invite Link */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-dark-border/50 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-gray-400 font-semibold flex items-center gap-1 mr-1">
-              <Users className="w-3.5 h-3.5" />
-              <span>{members.length} Mitglieder:</span>
+        {/* Prominent Overall Balance Banner */}
+        <div className="p-4 sm:p-5 bg-gradient-to-br from-emerald-950/30 via-dark-elevated to-dark-card border border-emerald-500/30 rounded-2xl flex items-center justify-between shadow-inner">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Deine Gesamtbilanz in dieser Gruppe:
             </span>
-            {members.map((m) => (
-              <span
-                key={m.user_id}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-elevated border border-dark-border/80 text-gray-200"
-              >
-                <Avatar name={m.profile.display_name} avatarEmoji={m.profile.avatar_emoji} size="sm" className="w-4 h-4 text-[9px]" />
-                <span>{m.profile.display_name}</span>
-              </span>
-            ))}
+            <div
+              className={`text-2xl sm:text-3xl font-black mt-1 ${
+                myNetBalance > 0
+                  ? 'text-emerald-400'
+                  : myNetBalance < 0
+                  ? 'text-rose-400'
+                  : 'text-gray-200'
+              }`}
+            >
+              {myNetBalance > 0
+                ? `Du bekommst +${formatCurrency(myNetBalance, group.currency)}`
+                : myNetBalance < 0
+                ? `Du schuldest ${formatCurrency(myNetBalance, group.currency)}`
+                : 'Alles komplett ausgeglichen (0,00 €)'}
+            </div>
           </div>
 
-          <button
-            onClick={() => setInviteOpen(true)}
-            className="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 transition-all active:scale-95"
+          <div
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center border flex-shrink-0 ${
+              myNetBalance > 0
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : myNetBalance < 0
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                : 'bg-white/5 border-white/10 text-emerald-400'
+            }`}
           >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Freunde per Link / QR einladen</span>
-          </button>
+            {myNetBalance > 0 ? (
+              <TrendingUp className="w-6 h-6" />
+            ) : myNetBalance < 0 ? (
+              <TrendingDown className="w-6 h-6" />
+            ) : (
+              <CheckCircle2 className="w-6 h-6" />
+            )}
+          </div>
+        </div>
+
+        {/* 2. List of All Members Underneath Each Other with Exact Balance & Settle Action */}
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400 px-1">
+            <span>Mitglieder & Ausgleiche ({members.length})</span>
+            <button
+              onClick={() => setInviteOpen(true)}
+              className="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 lowercase tracking-normal text-xs"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Freunde einladen</span>
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {members.map((member) => {
+              const isMe = member.user_id === currentUser.id;
+              const memberNet = balances[member.user_id]?.netBalance || 0;
+
+              // Check if there is a simplified direct debt relation between currentUser and member
+              const iOweMember = simplified.find(
+                (d) => d.fromUser.id === currentUser.id && d.toUser.id === member.user_id
+              );
+              const memberOwesMe = simplified.find(
+                (d) => d.fromUser.id === member.user_id && d.toUser.id === currentUser.id
+              );
+
+              return (
+                <div
+                  key={member.user_id}
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border transition-all duration-200 ${
+                    isMe
+                      ? 'bg-emerald-950/20 border-emerald-500/40 shadow-sm'
+                      : iOweMember
+                      ? 'bg-rose-950/20 border-rose-500/40 hover:border-rose-500/60 shadow-sm'
+                      : memberOwesMe
+                      ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-500/60 shadow-sm'
+                      : 'bg-dark-elevated/70 border-dark-border/60 hover:border-white/15'
+                  }`}
+                >
+                  {/* Left: Avatar + Name */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar
+                      name={member.profile.display_name}
+                      avatarEmoji={member.profile.avatar_emoji}
+                      size="sm"
+                    />
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                        <span>{member.profile.display_name}</span>
+                        {isMe && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            Du
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-400 truncate">
+                        {isMe ? (
+                          <span>Dein Gesamtsaldo: {memberNet >= 0 ? `+${formatCurrency(memberNet, group.currency)}` : formatCurrency(memberNet, group.currency)}</span>
+                        ) : iOweMember ? (
+                          <span className="text-rose-400 font-semibold">
+                            Du schuldest {member.profile.display_name} {formatCurrency(iOweMember.amount, group.currency)}
+                          </span>
+                        ) : memberOwesMe ? (
+                          <span className="text-emerald-400 font-semibold">
+                            Schuldet dir {formatCurrency(memberOwesMe.amount, group.currency)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">
+                            Gesamtsaldo: {memberNet >= 0 ? `+${formatCurrency(memberNet, group.currency)}` : formatCurrency(memberNet, group.currency)} (mit dir ausgeglichen)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Balance amount and Direct Settle Button */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 mt-2 sm:mt-0 border-t sm:border-t-0 border-dark-border/40">
+                    {iOweMember ? (
+                      <>
+                        <span className="text-sm font-extrabold text-rose-400 font-mono">
+                          -{formatCurrency(iOweMember.amount, group.currency)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSettleTarget({
+                              payerId: currentUser.id,
+                              payeeId: member.user_id,
+                              amount: iOweMember.amount,
+                            })
+                          }
+                          className="py-1.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/40 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                        >
+                          <Wallet className="w-3.5 h-3.5" />
+                          <span>Ausgleichen</span>
+                        </button>
+                      </>
+                    ) : memberOwesMe ? (
+                      <>
+                        <span className="text-sm font-extrabold text-emerald-400 font-mono">
+                          +{formatCurrency(memberOwesMe.amount, group.currency)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSettleTarget({
+                              payerId: member.user_id,
+                              payeeId: currentUser.id,
+                              amount: memberOwesMe.amount,
+                            })
+                          }
+                          className="py-1.5 px-3 rounded-xl bg-dark-elevated hover:bg-emerald-600/30 border border-dark-border hover:border-emerald-500/50 text-gray-300 hover:text-white font-bold text-xs transition-all active:scale-95"
+                        >
+                          <span>Als bezahlt erfassen</span>
+                        </button>
+                      </>
+                    ) : isMe ? (
+                      <span
+                        className={`text-sm font-bold px-2.5 py-1 rounded-xl border ${
+                          myNetBalance > 0
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            : myNetBalance < 0
+                            ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                            : 'bg-white/5 border-white/10 text-gray-400'
+                        }`}
+                      >
+                        {myNetBalance >= 0 ? `+${formatCurrency(myNetBalance, group.currency)}` : formatCurrency(myNetBalance, group.currency)}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-gray-400 bg-dark-elevated px-2.5 py-1 rounded-xl border border-dark-border/50">
+                        Ausgeglichen (0,00 €)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Tabs Navigation */}
+      {/* Tabs Navigation: Only Ausgaben & Verlauf */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={(id) => setActiveTab(id as any)} />
 
       {/* Tab Content */}
@@ -175,16 +342,6 @@ export default function GroupDetailPage() {
             expenses={expenses}
             members={members}
             onAddExpense={() => setAddExpenseOpen(true)}
-          />
-        )}
-
-        {activeTab === 'balances' && (
-          <DebtSimplificationCard
-            groupId={groupId}
-            members={members}
-            expenses={expenses}
-            settlements={settlements}
-            currency={group.currency}
           />
         )}
 
@@ -223,6 +380,20 @@ export default function GroupDetailPage() {
         isOpen={analyticsOpen}
         onClose={() => setAnalyticsOpen(false)}
       />
+
+      {/* Settle Up Modal */}
+      {settleTarget && (
+        <SettleUpModal
+          groupId={groupId}
+          members={members}
+          currency={group.currency}
+          initialPayerId={settleTarget.payerId}
+          initialPayeeId={settleTarget.payeeId}
+          initialAmount={settleTarget.amount}
+          isOpen={Boolean(settleTarget)}
+          onClose={() => setSettleTarget(null)}
+        />
+      )}
 
       <BottomNav onAddClick={() => setAddExpenseOpen(true)} />
     </div>
