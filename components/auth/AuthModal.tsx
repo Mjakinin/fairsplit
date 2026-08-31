@@ -60,10 +60,20 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
     const generated = Math.floor(100000 + Math.random() * 900000).toString();
     setExpectedCode(generated);
 
-    setTimeout(() => {
-      setLoading(false);
-      setStep('verify');
-    }, 400);
+    fetch('/api/auth/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: regEmail.trim(), code: generated, name: regName.trim() }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setLoading(false);
+        setStep('verify');
+      })
+      .catch(() => {
+        setLoading(false);
+        setStep('verify');
+      });
   };
 
   const handleVerifyAndFinish = (e: React.FormEvent) => {
