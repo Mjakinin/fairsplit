@@ -921,6 +921,29 @@ export function ExpenseFormModal({
                       className="flex-1 bg-dark-elevated border border-dark-border rounded-xl px-3 py-2 text-xs font-semibold text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
                     />
 
+                    {/* Quantity Stepper (1x, 2x, etc.) */}
+                    <div className="flex items-center bg-dark-elevated border border-dark-border rounded-xl px-1 py-0.5">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateItem(item.id, 'quantity', Math.max(1, (item.quantity || 1) - 1))}
+                        className="w-5 h-6 text-gray-400 hover:text-white flex items-center justify-center font-bold text-xs"
+                        title="Menge verringern"
+                      >
+                        -
+                      </button>
+                      <span className="px-1 text-[11px] font-mono font-bold text-emerald-400 min-w-[20px] text-center">
+                        {item.quantity || 1}x
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateItem(item.id, 'quantity', (item.quantity || 1) + 1)}
+                        className="w-5 h-6 text-gray-400 hover:text-white flex items-center justify-center font-bold text-xs"
+                        title="Menge erhöhen"
+                      >
+                        +
+                      </button>
+                    </div>
+
                     {/* Price Input */}
                     <div className="relative w-24">
                       <input
@@ -948,9 +971,16 @@ export function ExpenseFormModal({
                     </button>
                   </div>
 
+                  {/* Price breakdown if quantity > 1 */}
+                  {(item.quantity || 1) > 1 && (
+                    <div className="text-[10px] text-gray-400 text-right pr-1">
+                      {item.quantity}x {formatCurrency(item.price, currency)} = <strong className="text-emerald-400 font-mono">{formatCurrency((item.quantity || 1) * item.price, currency)}</strong>
+                    </div>
+                  )}
+
                   {/* Member Assignment Chips */}
-                  <div className="flex flex-wrap gap-1.5 pt-1 border-t border-dark-border/40">
-                    <span className="text-[10px] text-gray-400 self-center pr-1">Beteiligt:</span>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-dark-border/40">
+                    <span className="text-[10px] text-gray-400 self-center pr-1">Wem gehört es?</span>
                     {members.map((member) => {
                       const isAssigned = item.assignments.some((a) => a.user_id === member.user_id);
                       return (
@@ -958,7 +988,7 @@ export function ExpenseFormModal({
                           key={member.user_id}
                           type="button"
                           onClick={() => handleToggleItemAssignment(item.id, member.user_id)}
-                          className={`py-1 px-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          className={`py-1 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                             isAssigned
                               ? 'bg-emerald-600 text-white shadow-sm scale-100'
                               : 'bg-dark-elevated text-gray-400 hover:text-white border border-dark-border/50 opacity-60'
