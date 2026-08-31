@@ -1,17 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { useFairSplitStore, UserAccount } from '@/lib/supabase/store';
-import { Avatar } from '@/components/ui/Avatar';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
 import { 
   ShieldCheck, Lock, Users, Receipt, FolderTree, Download, 
-  Trash2, Key, Eye, EyeOff, Check, Copy, ArrowLeft, RefreshCw, 
-  Database, Search, BarChart3, AlertTriangle 
+  Trash2, Eye, EyeOff, Check, Copy, ArrowLeft, Database, 
+  Search, BarChart3 
 } from 'lucide-react';
 
-export default function AdminDashboardPage() {
+export default function SystemDiagnosticsPage() {
+  const params = useParams();
+  const slug = params.slug as string;
+
   const store = useFairSplitStore();
   const [adminPin, setAdminPin] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,32 +26,35 @@ export default function AdminDashboardPage() {
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Server-Side Verification against ADMIN_PASSWORD env var
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  // Authenticate against secret server-side endpoint
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     setVerifying(true);
 
     try {
-      const res = await fetch('/api/admin/verify', {
+      const res = await fetch('/api/system/metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPin }),
+        body: JSON.stringify({ key: adminPin, slug }),
       });
+
+      if (res.status === 404) {
+        notFound();
+        return;
+      }
+
       const data = await res.json();
       setVerifying(false);
 
       if (data.success) {
         setIsAuthenticated(true);
-        try {
-          sessionStorage.setItem('fairsplit_admin_session', data.token);
-        } catch {}
       } else {
-        setAuthError(data.error || 'Falsches Admin-Passwort.');
+        setAuthError(data.error || 'Ungültiger Sicherheitsschlüssel.');
       }
     } catch {
       setVerifying(false);
-      setAuthError('Verbindungsfehler zum Server.');
+      setAuthError('Verbindungsfehler.');
     }
   };
 
@@ -56,9 +62,7 @@ export default function AdminDashboardPage() {
   const groups = store.getGroups();
   const allMembers = store.getAllMembers();
   const allExpenses = store.getAllExpenses();
-  const allSettlements = store.getAllSettlements();
 
-  // Statistics
   const totalVolume = allExpenses.reduce((sum, exp) => sum + exp.total_amount, 0);
 
   const togglePasswordReveal = (id: string) => {
@@ -72,13 +76,13 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteAccount = (acc: UserAccount) => {
-    if (confirm(`Möchtest du das Konto von "${acc.profile.display_name}" (${acc.email}) wirklich unwiderruflich löschen?`)) {
+    if (confirm(`Konto von "${acc.profile.display_name}" (${acc.email}) löschen?`)) {
       store.deleteAccount(acc.id);
     }
   };
 
   const handleDeleteGroup = (groupId: string, groupName: string) => {
-    if (confirm(`Möchtest du die Gruppe "${groupName}" wirklich aus der Datenbank löschen?`)) {
+    if (confirm(`Gruppe "${groupName}" löschen?`)) {
       store.deleteGroup(groupId);
     }
   };
@@ -86,12 +90,12 @@ export default function AdminDashboardPage() {
   const handleDownloadJsonBackup = () => {
     const dump = store.getFullDatabaseDump();
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(dump, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `fairsplit_backup_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+    const a = document.createElement('a');
+    a.setAttribute('href', dataStr);
+    a.setAttribute('download', `fairsplit_backup_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   const handleDownloadUsersCsv = () => {
@@ -100,12 +104,12 @@ export default function AdminDashboardPage() {
       csv += `"${acc.id}","${acc.profile.display_name}","${acc.email}","${acc.profile.avatar_emoji || ''}","${acc.profile.paypal_me_handle || ''}","${acc.profile.created_at}"\n`;
     }
     const dataStr = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `fairsplit_users_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+    const a = document.createElement('a');
+    a.setAttribute('href', dataStr);
+    a.setAttribute('download', `fairsplit_users_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   if (!isAuthenticated) {
@@ -116,8 +120,8 @@ export default function AdminDashboardPage() {
             <Lock className="w-8 h-8" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Admin Master Dashboard</h1>
-            <p className="text-xs text-gray-400 mt-1">Geschützter Administrations- und Datenbankbereich</p>
+            <h1 className="text-xl font-extrabold text-white tracking-tight">System & Datenbank Konsole</h1>
+            <p className="text-xs text-gray-400 mt-1">Geschützter Administrator-Zugang</p>
           </div>
 
           {authError && (
@@ -126,10 +130,10 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          <form onSubmit={handleAdminLogin} className="space-y-4 text-left">
+          <form onSubmit={handleAuth} className="space-y-4 text-left">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                Admin PIN / Passwort
+                Sicherheitsschlüssel
               </label>
               <input
                 type="password"
@@ -137,29 +141,29 @@ export default function AdminDashboardPage() {
                 autoFocus
                 value={adminPin}
                 onChange={(e) => setAdminPin(e.target.value)}
-                placeholder="PIN eingeben (Standard: admin2026)"
+                placeholder="Schlüssel eingeben..."
                 className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm font-mono"
               />
             </div>
 
             <button
               type="submit"
+              disabled={verifying}
               className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>Admin Dashboard öffnen</span>
+              <span>{verifying ? 'Prüfe...' : 'Konsole entsperren'}</span>
             </button>
           </form>
 
           <Link href="/" className="inline-block text-xs text-gray-500 hover:text-gray-300">
-            Zurück zur FairSplit Startseite
+            Zurück zur Startseite
           </Link>
         </div>
       </div>
     );
   }
 
-  // Filtered queries
   const filteredAccounts = accounts.filter(
     (a) =>
       a.profile.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -183,17 +187,14 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-dark-card border border-dark-border rounded-3xl shadow-xl">
         <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="p-2 text-gray-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
-          >
+          <Link href="/" className="p-2 text-gray-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-400" />
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                FairSplit Master Datenbank & Admin Cockpit
+                FairSplit Master Datenbank
               </h1>
             </div>
             <p className="text-xs text-gray-400 mt-0.5">
