@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { Check, Trash2, Database, LogOut, Mail, User } from 'lucide-react';
+import { Check, Trash2, Database, LogOut, Mail, User, ShieldCheck } from 'lucide-react';
 import { ANIMAL_EMOJIS } from './WelcomeModal';
 
 interface UserProfileDrawerProps {
@@ -191,16 +192,24 @@ export function UserProfileDrawer({ isOpen, onClose, onOpenAuth }: UserProfileDr
           </button>
         </div>
 
-        {/* Developer & Test Actions */}
+        {/* Developer & Admin Actions */}
         <div className="pt-4 border-t border-dark-border/60 space-y-2">
-          <div className="text-xs text-gray-400 font-medium">Testen & Datenverwaltung:</div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="text-xs text-gray-400 font-medium">Administration & Testen:</div>
+          <Link
+            href="/admin"
+            onClick={onClose}
+            className="w-full py-2.5 px-3 rounded-xl bg-dark-card hover:bg-emerald-950/30 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center justify-center gap-2 transition-all"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Admin Master Dashboard & Datenbank</span>
+          </Link>
+          <div className="grid grid-cols-2 gap-2 pt-1">
             <button
               type="button"
               onClick={handleLoadDemoData}
-              className="py-2 px-3 rounded-xl bg-dark-card hover:bg-dark-elevated border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+              className="py-2 px-3 rounded-xl bg-dark-card hover:bg-dark-elevated border border-white/10 text-gray-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
             >
-              <Database className="w-3.5 h-3.5" />
+              <Database className="w-3.5 h-3.5 text-purple-400" />
               <span>Demo laden</span>
             </button>
             <button
