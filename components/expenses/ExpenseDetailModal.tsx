@@ -123,16 +123,7 @@ export function ExpenseDetailModal({ expense, members, isOpen, onClose }: Expens
                     </div>
 
                     {/* Member Shares Breakdown */}
-                    <div className="pt-2 border-t border-dark-border/40 space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] text-gray-400">
-                        <span>Aufgeteilt auf {item.assignments.length} {item.assignments.length === 1 ? 'Person' : 'Personen'}:</span>
-                        {item.assignments.length > 0 && (
-                          <span className="text-emerald-400 font-bold font-mono">
-                            je {formatCurrency((item.price * (item.quantity || 1)) / (item.assignments.length || 1), expense.currency)}
-                          </span>
-                        )}
-                      </div>
-
+                    <div className="pt-2 border-t border-dark-border/40">
                       <div className="flex flex-wrap gap-1.5">
                         {item.assignments.map((a) => {
                           const profile = memberMap.get(a.user_id) || a.profile;
