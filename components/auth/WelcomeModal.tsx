@@ -3,19 +3,24 @@
 import { useState } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { Split, Sparkles, Fingerprint, ArrowRight, Check } from 'lucide-react';
+import { Fingerprint, ArrowRight } from 'lucide-react';
 
 interface WelcomeModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const AVATAR_EMOJIS = ['😎', '🚀', '🍕', '🦊', '⚡', '🌸', '🥑', '🤠', '🐼', '🏄', '🎨', '🦁'];
+export const ANIMAL_EMOJIS = [
+  '🦊', '🦁', '🐼', '🐯', '🐱', '🐶', '🐺', '🐻', 
+  '🐨', '🐵', '🐸', '🐙', '🦉', '🦅', '🦄', '🐰', 
+  '🐧', '🐬', '🐢', '🦔', '🐘', '🦒', '🦓', '🦩', 
+  '🦥', '🦦', '🦨', '🦘', '🐝', '🦋', '🦕', '🦖'
+];
 
 export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   const store = useFairSplitStore();
   const [name, setName] = useState('');
-  const [selectedEmoji, setSelectedEmoji] = useState('😎');
+  const [selectedEmoji, setSelectedEmoji] = useState('🦊');
   const [paypalHandle, setPaypalHandle] = useState('');
 
   const handleStart = (e: React.FormEvent) => {
@@ -38,33 +43,34 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
       onClose={onClose}
       title="Willkommen bei FairSplit! ⚡"
       subtitle="Kein Passwort nötig – sofort loslegen"
+      maxHeight="max-h-[92vh]"
     >
       <form onSubmit={handleStart} className="space-y-5 py-2">
-        {/* Brand Icon */}
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white mx-auto shadow-xl shadow-emerald-950/50">
-            <Split className="w-8 h-8 -rotate-45" />
+        {/* Large Centered Avatar Preview */}
+        <div className="flex flex-col items-center justify-center space-y-2">
+          <div className="w-20 h-20 rounded-3xl bg-dark-elevated border-2 border-emerald-500/60 flex items-center justify-center text-4xl shadow-xl shadow-emerald-950/50 transition-all transform hover:scale-105">
+            <span>{selectedEmoji}</span>
           </div>
-          <p className="text-xs text-gray-400 max-w-xs mx-auto">
+          <p className="text-xs text-gray-400 max-w-xs mx-auto text-center">
             Die moderne Splitwise-Alternative: Belege aufteilen, Trinkgelder verteilen & Schulden minimieren.
           </p>
         </div>
 
-        {/* Emoji Avatar Picker */}
+        {/* Animal Emoji Avatar Picker */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 text-center">
-            Wähle dein Avatar-Emoji
+            Wähle dein Tier-Avatar
           </label>
-          <div className="flex flex-wrap justify-center gap-2">
-            {AVATAR_EMOJIS.map((emoji) => (
+          <div className="flex flex-wrap justify-center gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-dark-elevated rounded-2xl border border-dark-border/60">
+            {ANIMAL_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
                 type="button"
                 onClick={() => setSelectedEmoji(emoji)}
-                className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center border transition-all active:scale-95 ${
+                className={`w-9 h-9 rounded-xl text-xl flex items-center justify-center border transition-all active:scale-95 ${
                   selectedEmoji === emoji
-                    ? 'bg-emerald-500/20 border-emerald-500 shadow-md shadow-emerald-950/40 scale-110'
-                    : 'bg-dark-elevated border-dark-border text-gray-400 hover:text-white'
+                    ? 'bg-emerald-500/25 border-emerald-500 shadow-md shadow-emerald-950/40 scale-110'
+                    : 'bg-dark-card border-dark-border/60 text-gray-300 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {emoji}
@@ -85,7 +91,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="z. B. Alex, Sarah oder Maxim"
-            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-base font-semibold"
+            className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-base font-semibold"
           />
         </div>
 
@@ -96,13 +102,13 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             <span className="text-gray-500 normal-case font-normal">Optional</span>
           </label>
           <div className="relative">
-            <span className="absolute left-4 top-3.5 text-gray-500 text-sm">paypal.me/</span>
+            <span className="absolute left-4 top-3 text-gray-500 text-sm">paypal.me/</span>
             <input
               type="text"
               value={paypalHandle}
               onChange={(e) => setPaypalHandle(e.target.value)}
               placeholder="deinName"
-              className="w-full bg-dark-elevated border border-dark-border rounded-xl pl-28 pr-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
+              className="w-full bg-dark-elevated border border-dark-border rounded-xl pl-28 pr-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
             />
           </div>
         </div>

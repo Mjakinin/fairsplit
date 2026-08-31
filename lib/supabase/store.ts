@@ -177,7 +177,7 @@ export const FairSplitStore = {
       globalCurrentUser = {
         id: `user-${Date.now()}`,
         display_name: 'Ich',
-        avatar_emoji: '👤',
+        avatar_emoji: '🦊',
         is_guest: true,
         created_at: new Date().toISOString(),
       };
@@ -197,7 +197,7 @@ export const FairSplitStore = {
     notify();
   },
 
-  loginAsGuest(displayName: string, emoji = '😎', paypalHandle?: string, iban?: string): Profile {
+  loginAsGuest(displayName: string, emoji = '🦊', paypalHandle?: string, iban?: string): Profile {
     initStore();
     const guest: Profile = {
       id: globalCurrentUser?.id || `guest-${Date.now()}`,

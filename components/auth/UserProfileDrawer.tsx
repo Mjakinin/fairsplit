@@ -4,21 +4,20 @@ import { useState, useEffect } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { Avatar } from '../ui/Avatar';
-import { User, CreditCard, Check, Sparkles, Trash2, Database, Smartphone } from 'lucide-react';
+import { Check, Trash2, Database } from 'lucide-react';
+import { ANIMAL_EMOJIS } from './WelcomeModal';
 
 interface UserProfileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const AVATAR_EMOJIS = ['😎', '🚀', '🍕', '🦊', '⚡', '🌸', '🥑', '🤠', '🐼', '🏄', '🎨', '🦁'];
-
 export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
 
   const [displayName, setDisplayName] = useState(currentUser.display_name);
-  const [selectedEmoji, setSelectedEmoji] = useState(currentUser.avatar_emoji || '😎');
+  const [selectedEmoji, setSelectedEmoji] = useState(currentUser.avatar_emoji || '🦊');
   const [paypalHandle, setPaypalHandle] = useState(currentUser.paypal_me_handle || '');
   const [iban, setIban] = useState(currentUser.iban || '');
   const [bic, setBic] = useState(currentUser.bic || '');
@@ -27,7 +26,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   useEffect(() => {
     if (isOpen) {
       setDisplayName(currentUser.display_name);
-      setSelectedEmoji(currentUser.avatar_emoji || '😎');
+      setSelectedEmoji(currentUser.avatar_emoji || '🦊');
       setPaypalHandle(currentUser.paypal_me_handle || '');
       setIban(currentUser.iban || '');
       setBic(currentUser.bic || '');
@@ -70,11 +69,14 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
       onClose={onClose}
       title="Dein Profil & Zahlungsdaten"
       subtitle="Für automatische 1-Klick Rückzahlungen & GiroCodes"
+      maxHeight="max-h-[92vh]"
     >
       <form onSubmit={handleSave} className="space-y-4 py-2">
-        {/* Profile Card */}
+        {/* Large Avatar Header Box */}
         <div className="flex items-center gap-4 p-4 bg-dark-elevated rounded-2xl border border-dark-border">
-          <Avatar name={displayName} avatarEmoji={selectedEmoji} size="lg" />
+          <div className="w-16 h-16 rounded-2xl bg-dark-card border-2 border-emerald-500/50 flex items-center justify-center text-3xl shadow-lg flex-shrink-0">
+            <span>{selectedEmoji}</span>
+          </div>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-white text-base truncate">{displayName}</div>
             <div className="text-xs text-emerald-400 font-medium">
@@ -83,21 +85,21 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
           </div>
         </div>
 
-        {/* Emoji Picker */}
+        {/* Animal Emoji Picker */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-            Avatar Emoji
+            Tier-Avatar wählen
           </label>
-          <div className="flex flex-wrap gap-1.5">
-            {AVATAR_EMOJIS.map((emoji) => (
+          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-dark-elevated rounded-2xl border border-dark-border/60">
+            {ANIMAL_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
                 type="button"
                 onClick={() => setSelectedEmoji(emoji)}
-                className={`w-9 h-9 rounded-xl text-base flex items-center justify-center border transition-all ${
+                className={`w-9 h-9 rounded-xl text-xl flex items-center justify-center border transition-all ${
                   selectedEmoji === emoji
-                    ? 'bg-emerald-500/20 border-emerald-500 scale-105'
-                    : 'bg-dark-card border-dark-border text-gray-400'
+                    ? 'bg-emerald-500/25 border-emerald-500 scale-105'
+                    : 'bg-dark-card border-dark-border/60 text-gray-300 hover:text-white'
                 }`}
               >
                 {emoji}
