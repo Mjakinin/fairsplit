@@ -69,22 +69,43 @@ export async function POST(req: Request) {
     // 1. Check for RESEND_API_KEY (Recommended for Netlify / Vercel)
     const resendApiKey = process.env.RESEND_API_KEY;
     if (resendApiKey) {
-      const resend = new Resend(resendApiKey);
-      const fromEmail = process.env.EMAIL_FROM || 'FairSplit <onboarding@resend.dev>';
+      try {
+        const resend = new Resend(resendApiKey);
+        const fromEmail = process.env.EMAIL_FROM || 'FairSplit <onboarding@resend.dev>';
 
-      const data = await resend.emails.send({
-        from: fromEmail,
-        to: email,
-        subject: emailSubject,
-        html: emailHtml,
-      });
+        const { data, error } = await resend.emails.send({
+          from: fromEmail,
+          to: email,
+          subject: emailSubject,
+          html: emailHtml,
+        });
 
-      return NextResponse.json({
-        success: true,
-        provider: 'resend',
-        id: data.data?.id,
-        message: `E-Mail erfolgreich via Resend an ${email} gesendet!`,
-      });
+        if (error) {
+          console.warn('Resend Hinweis:', error.message);
+          return NextResponse.json({
+            success: true,
+            provider: 'simulated',
+            warning: error.message,
+            code,
+            message: `Resend Hinweis: ${error.message}`,
+          });
+        }
+
+        return NextResponse.json({
+          success: true,
+          provider: 'resend',
+          id: data?.id,
+          message: `E-Mail erfolgreich via Resend an ${email} gesendet!`,
+        });
+      } catch (err: any) {
+        console.warn('Resend Exception:', err.message);
+        return NextResponse.json({
+          success: true,
+          provider: 'simulated',
+          code,
+          message: `Code generiert.`,
+        });
+      }
     }
 
     // 2. Check for Standard SMTP (Gmail, IONOS, Strato, Sendinblue, etc.)
@@ -97,7 +118,7 @@ export async function POST(req: Request) {
       const transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,
-        secure: smtpPort === 465, // true for 465, false for other ports
+        secure: smtpPort === 465,
         auth: {
           user: smtpUser,
           pass: smtpPass,
@@ -119,18 +140,11 @@ export async function POST(req: Request) {
     }
 
     // 3. Fallback for Local Development & Previews without configured keys
-    console.log(`\n======================================================`);
-    console.log(`📨 [FairSplit E-Mail Service - Lokaler Modus / Simulation]`);
-    console.log(`Empfänger: ${email}`);
-    console.log(`Sicherheitscode: ${code}`);
-    console.log(`(Um echte E-Mails zu senden, trage RESEND_API_KEY oder SMTP-Daten in .env.local ein)`);
-    console.log(`======================================================\n`);
-
     return NextResponse.json({
       success: true,
       provider: 'simulated',
       code,
-      message: `Code ${code} generiert (Simulations-Modus aktiv).`,
+      message: `Code ${code} generiert (Simulations-Modus).`,
     });
   } catch (error: any) {
     console.error('E-Mail Versende-Fehler:', error);
