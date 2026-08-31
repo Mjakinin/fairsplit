@@ -24,8 +24,8 @@ export default function HomePage() {
   const [welcomeOpen, setWelcomeOpen] = useState(false);
 
   useEffect(() => {
-    // If brand new user with default fallback name, show Welcome Modal
-    if (currentUser.display_name === 'Ich' && !currentUser.email) {
+    // If brand new user or unauthenticated, show Welcome / Auth Modal
+    if (!store.isAuthenticated()) {
       setWelcomeOpen(true);
     }
   }, [currentUser]);

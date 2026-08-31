@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useFairSplitStore } from '@/lib/supabase/store';
 import { UserProfileDrawer } from '../auth/UserProfileDrawer';
 import { AuthModal } from '../auth/AuthModal';
-import { Split } from 'lucide-react';
+import { Split, LogIn, User } from 'lucide-react';
 
 export function Navbar() {
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
+  const isAuthenticated = store.isAuthenticated();
   const [profileOpen, setProfileOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
 
@@ -36,23 +37,37 @@ export function Navbar() {
 
           {/* User Account / Animal Avatar Button */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setProfileOpen(true)}
-              className="flex items-center gap-2 py-1.5 pl-2 pr-3 rounded-full bg-dark-card hover:bg-dark-elevated border border-dark-border hover:border-emerald-500/40 shadow-sm transition-all active:scale-95 group"
-              title="Profil & Einstellungen"
-            >
-              <div className="w-7 h-7 rounded-full bg-dark-elevated border border-white/10 flex items-center justify-center text-base shadow-sm group-hover:scale-110 transition-transform">
-                <span>{animalEmoji}</span>
-              </div>
-              <span className="text-xs font-semibold text-white max-w-[120px] truncate">
-                {currentUser.display_name}
-              </span>
-            </button>
+            {isAuthenticated ? (
+              <button
+                onClick={() => setProfileOpen(true)}
+                className="flex items-center gap-2 py-1.5 pl-2 pr-3 rounded-full bg-dark-card hover:bg-dark-elevated border border-dark-border hover:border-emerald-500/40 shadow-sm transition-all active:scale-95 group"
+                title="Profil, PayPal & Abmeldung"
+              >
+                <div className="w-7 h-7 rounded-full bg-dark-elevated border border-white/10 flex items-center justify-center text-base shadow-sm group-hover:scale-110 transition-transform">
+                  <span>{animalEmoji}</span>
+                </div>
+                <span className="text-xs font-semibold text-white max-w-[120px] truncate">
+                  {currentUser.display_name}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setAuthOpen(true)}
+                className="flex items-center gap-2 py-2 px-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/40 transition-all active:scale-95"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Anmelden</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      <UserProfileDrawer isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
+      <UserProfileDrawer
+        isOpen={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        onOpenAuth={() => setAuthOpen(true)}
+      />
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   );

@@ -3,15 +3,16 @@
 import { useState, useEffect } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { Check, Trash2, Database, ShieldCheck } from 'lucide-react';
+import { Check, Trash2, Database, LogOut, Mail, User } from 'lucide-react';
 import { ANIMAL_EMOJIS } from './WelcomeModal';
 
 interface UserProfileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenAuth?: () => void;
 }
 
-export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
+export function UserProfileDrawer({ isOpen, onClose, onOpenAuth }: UserProfileDrawerProps) {
   const store = useFairSplitStore();
   const currentUser = store.getCurrentUser();
 
@@ -42,6 +43,16 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
     }, 500);
   };
 
+  const handleLogout = () => {
+    if (confirm('Möchtest du dich wirklich abmelden?')) {
+      store.logout();
+      onClose();
+      if (onOpenAuth) {
+        onOpenAuth();
+      }
+    }
+  };
+
   const handleLoadDemoData = () => {
     if (confirm('Möchtest du die Beispieldaten (Alpen-Wochenende mit Mitgliedern & Beleg) laden?')) {
       store.loadDemoSeedData();
@@ -60,8 +71,8 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
-      title="Dein Profil"
-      subtitle="Name, Tier-Avatar & Einstellungen"
+      title="Dein Profil & Konto"
+      subtitle="Einstellungen, PayPal & Abmeldung"
       maxHeight="max-h-[92vh]"
     >
       <form onSubmit={handleSave} className="space-y-4 py-2">
@@ -72,8 +83,8 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-white text-base truncate">{displayName}</div>
-            <div className="text-xs text-emerald-400 font-medium">
-              {currentUser.is_guest ? 'Lokal aktiv (Passwortlos)' : currentUser.email || 'Registrierter Nutzer'}
+            <div className="text-xs text-emerald-400 font-medium truncate">
+              {currentUser.email ? currentUser.email : 'Eingeloggt'}
             </div>
           </div>
         </div>
@@ -116,18 +127,18 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
 
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 flex items-center justify-between">
-            <span>PayPal (Benutzername oder E-Mail)</span>
+            <span>PayPal E-Mail</span>
             <span className="text-gray-500 normal-case font-normal">Optional</span>
           </label>
           <input
-            type="text"
+            type="email"
             value={paypalHandle}
             onChange={(e) => setPaypalHandle(e.target.value)}
-            placeholder="z. B. maximmjakin oder max@beispiel.de"
+            placeholder="beispiel@mail.de"
             className="w-full bg-dark-elevated border border-dark-border rounded-xl px-4 py-2.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
           />
           <p className="text-[11px] text-gray-500 mt-1">
-            Wird für den 1-Klick Ausgleichs-Link genutzt (z. B. <code>paypal.me/name</code>).
+            Wird für 1-Klick Rückzahlungen via PayPal genutzt.
           </p>
         </div>
 
@@ -144,6 +155,18 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
             <span>Profil speichern</span>
           )}
         </button>
+
+        {/* Logout Button */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full py-3 px-4 rounded-xl bg-dark-elevated hover:bg-rose-950/20 border border-dark-border hover:border-rose-500/40 text-gray-300 hover:text-rose-300 font-semibold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+          >
+            <LogOut className="w-4 h-4 text-rose-400" />
+            <span>Abmelden (Logout)</span>
+          </button>
+        </div>
 
         {/* Developer & Test Actions */}
         <div className="pt-4 border-t border-dark-border/60 space-y-2">

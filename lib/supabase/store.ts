@@ -11,36 +11,48 @@ const STORAGE_KEY_EXPENSES = 'fairsplit_expenses_v2';
 const STORAGE_KEY_SETTLEMENTS = 'fairsplit_settlements_v2';
 const STORAGE_KEY_ACTIVITY = 'fairsplit_activity_v2';
 const STORAGE_KEY_CURRENT_USER = 'fairsplit_current_user_v2';
+const STORAGE_KEY_ACCOUNTS = 'fairsplit_registered_accounts_v2';
+
+export interface UserAccount {
+  id: string;
+  email: string;
+  passwordHash: string;
+  profile: Profile;
+}
 
 // Optional Demo Seed Data (only loaded if user clicks "Demo-Daten laden")
 export const DEMO_PROFILES: Profile[] = [
   {
     id: 'user-demo-1',
     display_name: 'Maxim M.',
+    email: 'maxim@beispiel.de',
     avatar_emoji: '🦊',
     is_guest: false,
-    paypal_me_handle: 'maximmjakin',
+    paypal_me_handle: 'maxim@beispiel.de',
     created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
   },
   {
     id: 'user-demo-2',
     display_name: 'Linda K.',
+    email: 'linda@beispiel.de',
     avatar_emoji: '🦁',
     is_guest: false,
-    paypal_me_handle: 'lindak',
+    paypal_me_handle: 'linda@beispiel.de',
     created_at: new Date(Date.now() - 86400000 * 25).toISOString(),
   },
   {
     id: 'user-demo-3',
     display_name: 'Jonas W.',
+    email: 'jonas@beispiel.de',
     avatar_emoji: '🐼',
     is_guest: false,
-    paypal_me_handle: 'jonasw',
+    paypal_me_handle: 'jonas@beispiel.de',
     created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
   },
   {
     id: 'user-demo-4',
     display_name: 'Sarah B.',
+    email: 'sarah@beispiel.de',
     avatar_emoji: '🦉',
     is_guest: true,
     created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
@@ -102,12 +114,13 @@ export const DEMO_EXPENSES: Expense[] = [
   },
 ];
 
-// Clean In-Memory State
+// In-Memory State
 let globalGroups: Group[] = [];
 let globalMembers: GroupMember[] = [];
 let globalExpenses: Expense[] = [];
 let globalSettlements: Settlement[] = [];
 let globalActivity: ActivityLog[] = [];
+let globalAccounts: UserAccount[] = [];
 let globalCurrentUser: Profile | null = null;
 let isInitialized = false;
 
@@ -125,6 +138,7 @@ function initStore() {
     const storedExpenses = localStorage.getItem(STORAGE_KEY_EXPENSES);
     const storedSettlements = localStorage.getItem(STORAGE_KEY_SETTLEMENTS);
     const storedActivity = localStorage.getItem(STORAGE_KEY_ACTIVITY);
+    const storedAccounts = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
     const storedUser = localStorage.getItem(STORAGE_KEY_CURRENT_USER);
 
     globalGroups = storedGroups ? JSON.parse(storedGroups) : [];
@@ -132,6 +146,7 @@ function initStore() {
     globalExpenses = storedExpenses ? JSON.parse(storedExpenses) : [];
     globalSettlements = storedSettlements ? JSON.parse(storedSettlements) : [];
     globalActivity = storedActivity ? JSON.parse(storedActivity) : [];
+    globalAccounts = storedAccounts ? JSON.parse(storedAccounts) : [];
     globalCurrentUser = storedUser ? JSON.parse(storedUser) : null;
 
     isInitialized = true;
@@ -142,6 +157,7 @@ function initStore() {
     globalExpenses = [];
     globalSettlements = [];
     globalActivity = [];
+    globalAccounts = [];
     globalCurrentUser = null;
   }
 }
@@ -154,6 +170,7 @@ function saveToStorage() {
     localStorage.setItem(STORAGE_KEY_EXPENSES, JSON.stringify(globalExpenses));
     localStorage.setItem(STORAGE_KEY_SETTLEMENTS, JSON.stringify(globalSettlements));
     localStorage.setItem(STORAGE_KEY_ACTIVITY, JSON.stringify(globalActivity));
+    localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(globalAccounts));
     if (globalCurrentUser) {
       localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(globalCurrentUser));
     } else {
@@ -168,39 +185,115 @@ export const FairSplitStore = {
   getCurrentUser(): Profile {
     initStore();
     if (!globalCurrentUser) {
-      // Auto-fallback guest if none exists
-      globalCurrentUser = {
-        id: `user-${Date.now()}`,
-        display_name: 'Ich',
+      // Return a temporary placeholder profile if unauthenticated
+      return {
+        id: `user-guest-pending`,
+        display_name: 'Gast',
         avatar_emoji: '🦊',
         is_guest: true,
         created_at: new Date().toISOString(),
       };
-      saveToStorage();
     }
     return globalCurrentUser;
   },
 
-  hasCustomUser(): boolean {
+  isAuthenticated(): boolean {
     initStore();
-    return Boolean(globalCurrentUser && globalCurrentUser.display_name !== 'Ich');
+    return Boolean(globalCurrentUser && globalCurrentUser.id !== 'user-guest-pending');
   },
 
-  setCurrentUser(user: Profile) {
-    globalCurrentUser = user;
+  // Auth: Email + Password Registration
+  registerWithEmailPassword(
+    displayName: string,
+    email: string,
+    password: string,
+    avatarEmoji = '🦊',
+    paypalEmail?: string
+  ): { success: boolean; error?: string; user?: Profile } {
+    initStore();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password || password.length < 4) {
+      return { success: false, error: 'Bitte gültige E-Mail und Passwort (mind. 4 Zeichen) eingeben.' };
+    }
+
+    const existing = globalAccounts.find((a) => a.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      return { success: false, error: 'Diese E-Mail ist bereits registriert. Bitte melde dich an.' };
+    }
+
+    const newProfile: Profile = {
+      id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      display_name: displayName.trim() || cleanEmail.split('@')[0],
+      email: cleanEmail,
+      avatar_emoji: avatarEmoji,
+      is_guest: false,
+      paypal_me_handle: paypalEmail?.trim() || null,
+      created_at: new Date().toISOString(),
+    };
+
+    const newAccount: UserAccount = {
+      id: newProfile.id,
+      email: cleanEmail,
+      passwordHash: btoa(password), // Simple base64 client store hash
+      profile: newProfile,
+    };
+
+    globalAccounts = [...globalAccounts, newAccount];
+    globalCurrentUser = newProfile;
+
     saveToStorage();
     notify();
+    return { success: true, user: newProfile };
   },
 
+  // Auth: Email + Password Login
+  loginWithEmailPassword(
+    email: string,
+    password: string
+  ): { success: boolean; error?: string; user?: Profile } {
+    initStore();
+    const cleanEmail = email.trim().toLowerCase();
+    const account = globalAccounts.find(
+      (a) => a.email.toLowerCase() === cleanEmail && a.passwordHash === btoa(password)
+    );
+
+    if (!account) {
+      return { success: false, error: 'Ungültige E-Mail-Adresse oder falsches Passwort.' };
+    }
+
+    globalCurrentUser = account.profile;
+    saveToStorage();
+    notify();
+    return { success: true, user: account.profile };
+  },
+
+  // Auth: Passkey / Biometrics 1-Click
+  loginWithPasskey(displayName = 'Passkey Nutzer', emoji = '🦊'): Profile {
+    initStore();
+    const profile: Profile = {
+      id: `passkey-${Date.now()}`,
+      display_name: displayName.trim() || 'Passkey Nutzer',
+      avatar_emoji: emoji,
+      is_guest: false,
+      created_at: new Date().toISOString(),
+    };
+
+    globalCurrentUser = profile;
+    saveToStorage();
+    notify();
+    return profile;
+  },
+
+  // Auth: Instant Guest Login
   loginAsGuest(displayName: string, emoji = '🦊', paypalHandle?: string): Profile {
     initStore();
     const guest: Profile = {
-      id: globalCurrentUser?.id || `guest-${Date.now()}`,
+      id: globalCurrentUser?.id && globalCurrentUser.id !== 'user-guest-pending' ? globalCurrentUser.id : `guest-${Date.now()}`,
       display_name: displayName.trim() || 'Gast',
       avatar_emoji: emoji,
       is_guest: true,
       paypal_me_handle: paypalHandle?.replace(/^@/, '').trim() || null,
-      created_at: globalCurrentUser?.created_at || new Date().toISOString(),
+      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     globalCurrentUser = guest;
@@ -226,6 +319,15 @@ export const FairSplitStore = {
       updated_at: new Date().toISOString(),
     };
 
+    // Update in registered accounts if exists
+    globalAccounts = globalAccounts.map((a) => {
+      if (a.id === globalCurrentUser!.id) {
+        return { ...a, profile: globalCurrentUser! };
+      }
+      return a;
+    });
+
+    // Update in all group members
     globalMembers = globalMembers.map((m) => {
       if (m.user_id === globalCurrentUser!.id) {
         return { ...m, profile: globalCurrentUser! };
@@ -239,6 +341,7 @@ export const FairSplitStore = {
   },
 
   logout() {
+    initStore();
     globalCurrentUser = null;
     saveToStorage();
     notify();
@@ -272,7 +375,7 @@ export const FairSplitStore = {
     };
   },
 
-  createGroup(name: string, description = '', emoji = '💰', currency: CurrencyCode = 'EUR', initialMemberNames: string[] = []): Group {
+  createGroup(name: string, description = '', emoji = '💰', currency: CurrencyCode = 'EUR'): Group {
     initStore();
     const currentUser = this.getCurrentUser();
 
@@ -288,40 +391,17 @@ export const FairSplitStore = {
       created_at: new Date().toISOString(),
     };
 
-    const membersToAdd: GroupMember[] = [
-      {
-        id: `mem-${Date.now()}-0`,
-        group_id: newGroup.id,
-        user_id: currentUser.id,
-        role: 'admin',
-        joined_at: new Date().toISOString(),
-        profile: currentUser,
-      },
-    ];
-
-    // Add extra initial members
-    initialMemberNames.forEach((mName, idx) => {
-      if (mName.trim()) {
-        const guestProfile: Profile = {
-          id: `user-${Date.now()}-${idx + 1}`,
-          display_name: mName.trim(),
-          avatar_emoji: '👤',
-          is_guest: true,
-          created_at: new Date().toISOString(),
-        };
-        membersToAdd.push({
-          id: `mem-${Date.now()}-${idx + 1}`,
-          group_id: newGroup.id,
-          user_id: guestProfile.id,
-          role: 'member',
-          joined_at: new Date().toISOString(),
-          profile: guestProfile,
-        });
-      }
-    });
+    const newMember: GroupMember = {
+      id: `mem-${Date.now()}-0`,
+      group_id: newGroup.id,
+      user_id: currentUser.id,
+      role: 'admin',
+      joined_at: new Date().toISOString(),
+      profile: currentUser,
+    };
 
     globalGroups = [newGroup, ...globalGroups];
-    globalMembers = [...globalMembers, ...membersToAdd];
+    globalMembers = [...globalMembers, newMember];
 
     const log: ActivityLog = {
       id: `act-${Date.now()}`,
@@ -330,7 +410,7 @@ export const FairSplitStore = {
       action_type: 'group_updated',
       entity_type: 'group',
       title: `Gruppe "${name}" erstellt`,
-      description: `Erstellt von ${currentUser.display_name} mit ${membersToAdd.length} Mitgliedern`,
+      description: `Erstellt von ${currentUser.display_name}`,
       created_at: new Date().toISOString(),
       profile: currentUser,
     };
@@ -401,46 +481,6 @@ export const FairSplitStore = {
     saveToStorage();
     notify();
     return true;
-  },
-
-  addMemberToGroup(groupId: string, name: string, emoji = '👤'): Profile {
-    initStore();
-    const currentUser = this.getCurrentUser();
-    const newGuest: Profile = {
-      id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      display_name: name.trim(),
-      avatar_emoji: emoji,
-      is_guest: true,
-      created_at: new Date().toISOString(),
-    };
-
-    const newMember: GroupMember = {
-      id: `mem-${Date.now()}`,
-      group_id: groupId,
-      user_id: newGuest.id,
-      role: 'member',
-      joined_at: new Date().toISOString(),
-      profile: newGuest,
-    };
-
-    globalMembers = [...globalMembers, newMember];
-
-    const log: ActivityLog = {
-      id: `act-${Date.now()}`,
-      group_id: groupId,
-      user_id: currentUser.id,
-      action_type: 'member_joined',
-      entity_type: 'group_member',
-      title: `${newGuest.display_name} hinzugefügt`,
-      description: `Hinzugefügt von ${currentUser.display_name}`,
-      created_at: new Date().toISOString(),
-      profile: currentUser,
-    };
-    globalActivity = [log, ...globalActivity];
-
-    saveToStorage();
-    notify();
-    return newGuest;
   },
 
   removeMemberFromGroup(groupId: string, userId: string): boolean {
@@ -662,7 +702,7 @@ export const FairSplitStore = {
         action_type: 'group_updated',
         entity_type: 'group',
         title: 'Demo-Gruppe Alpen-Wochenende geladen',
-        description: '4 Mitglieder, Beispiel-Beleg & Beleg-Splitter',
+        description: 'Mitglieder, Beispiel-Beleg & Beleg-Splitter',
         created_at: new Date().toISOString(),
         profile: DEMO_PROFILES[0],
       },
@@ -677,6 +717,7 @@ export const FairSplitStore = {
     globalExpenses = [];
     globalSettlements = [];
     globalActivity = [];
+    globalAccounts = [];
     globalCurrentUser = null;
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY_GROUPS);
@@ -684,6 +725,7 @@ export const FairSplitStore = {
       localStorage.removeItem(STORAGE_KEY_EXPENSES);
       localStorage.removeItem(STORAGE_KEY_SETTLEMENTS);
       localStorage.removeItem(STORAGE_KEY_ACTIVITY);
+      localStorage.removeItem(STORAGE_KEY_ACCOUNTS);
       localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
     }
     notify();
