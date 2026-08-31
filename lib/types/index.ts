@@ -109,11 +109,11 @@ export interface Expense {
   split_mode: SplitMode;
   total_amount: number;
   currency: CurrencyCode;
-  tip_amount: number;
-  tip_type: TipType;
+  tip_amount?: number;
+  tip_type?: TipType;
   tip_percentage?: number;
-  service_charge: number;
-  surcharge_split_mode: SurchargeSplitMode;
+  service_charge?: number;
+  surcharge_split_mode?: SurchargeSplitMode;
   expense_date: string;
   receipt_url?: string | null;
   created_by?: string | null;

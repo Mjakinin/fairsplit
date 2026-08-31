@@ -132,18 +132,18 @@ export function ExpenseDetailModal({ expense, members, isOpen, onClose }: Expens
                 ))}
 
                 {/* Tips and Surcharges info */}
-                {(expense.tip_amount > 0 || expense.service_charge > 0) && (
+                {((expense.tip_amount || 0) > 0 || (expense.service_charge || 0) > 0) && (
                   <div className="p-3 bg-emerald-950/20 rounded-xl border border-emerald-500/20 text-xs space-y-1 text-emerald-300">
-                    {expense.tip_amount > 0 && (
+                    {(expense.tip_amount || 0) > 0 && (
                       <div className="flex justify-between">
                         <span>Trinkgeld ({expense.surcharge_split_mode === 'proportional' ? 'proportional' : 'gleichmäßig'}):</span>
-                        <span className="font-semibold">+{formatCurrency(expense.tip_amount, expense.currency)}</span>
+                        <span className="font-semibold">+{formatCurrency(expense.tip_amount || 0, expense.currency)}</span>
                       </div>
                     )}
-                    {expense.service_charge > 0 && (
+                    {(expense.service_charge || 0) > 0 && (
                       <div className="flex justify-between">
                         <span>Servicegebühr:</span>
-                        <span className="font-semibold">+{formatCurrency(expense.service_charge, expense.currency)}</span>
+                        <span className="font-semibold">+{formatCurrency(expense.service_charge || 0, expense.currency)}</span>
                       </div>
                     )}
                   </div>
