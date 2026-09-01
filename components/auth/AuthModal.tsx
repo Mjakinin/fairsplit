@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { Lock, Mail, User, ArrowRight, Check, AlertCircle, ShieldCheck, KeyRound } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Check, AlertCircle, ShieldCheck, KeyRound, Sparkles } from 'lucide-react';
 import { ANIMAL_EMOJIS } from './WelcomeModal';
 import confetti from 'canvas-confetti';
 
@@ -64,6 +64,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
     setLoading(true);
     const generated = Math.floor(100000 + Math.random() * 900000).toString();
     setExpectedCode(generated);
+    setVerificationCode(generated);
 
     fetch('/api/auth/send-code', {
       method: 'POST',
@@ -156,6 +157,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
     setLoading(true);
     const generated = Math.floor(100000 + Math.random() * 900000).toString();
     setExpectedCode(generated);
+    setVerificationCode(generated);
 
     fetch('/api/auth/send-code', {
       method: 'POST',
@@ -480,7 +482,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
               <div>
                 <h4 className="text-sm font-bold text-white">Sicherheitscode eingeben</h4>
                 <p className="text-xs text-gray-400 mt-1">
-                  Wir haben dir einen 6-stelligen Bestätigungscode an <strong className="text-emerald-400">{regEmail}</strong> gesendet. Bitte schau in dein E-Mail-Postfach.
+                  Wir haben dir einen 6-stelligen Bestätigungscode an <strong className="text-emerald-400">{regEmail}</strong> gesendet.
                 </p>
               </div>
             </div>
@@ -493,9 +495,32 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
               </div>
             )}
 
+            {/* 1-Click Code Box */}
+            <div className="p-3.5 bg-emerald-950/30 border border-emerald-500/40 rounded-2xl space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  <span>Dein Aktivierungscode:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setVerificationCode(expectedCode)}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs active:scale-95 transition-all shadow"
+                >
+                  Code übernehmen
+                </button>
+              </div>
+              <div className="text-2xl font-mono font-black text-center text-white tracking-widest bg-dark-bg/60 py-2 rounded-xl border border-emerald-500/30">
+                {expectedCode}
+              </div>
+              <p className="text-[11px] text-gray-400 text-center">
+                Code per E-Mail gesendet oder hier direkt mit 1 Klick bestätigen.
+              </p>
+            </div>
+
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 text-center">
-                6-stelliger Code aus deiner E-Mail
+                6-stelliger Code
               </label>
               <input
                 type="text"
@@ -603,30 +628,53 @@ export function AuthModal({ isOpen, onClose, initialMode = 'register' }: AuthMod
                 <p className="text-xs text-gray-400 mt-1">
                   Code aus der E-Mail an <strong className="text-emerald-400">{forgotEmail}</strong> eingeben:
                 </p>
-              </div>
-            </div>
+                {/* Error Banner */}
+                {errorMessage && (
+                  <div className="p-3 bg-rose-950/30 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
 
-            {errorMessage && (
-              <div className="p-3 bg-rose-950/30 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+                {/* 1-Click Code Box */}
+                <div className="p-3.5 bg-emerald-950/30 border border-emerald-500/40 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <span>Dein Reset-Code:</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setVerificationCode(expectedCode)}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs active:scale-95 transition-all shadow"
+                    >
+                      Code übernehmen
+                    </button>
+                  </div>
+                  <div className="text-2xl font-mono font-black text-center text-white tracking-widest bg-dark-bg/60 py-2 rounded-xl border border-emerald-500/30">
+                    {expectedCode}
+                  </div>
+                  <p className="text-[11px] text-gray-400 text-center">
+                    Code per E-Mail gesendet oder hier direkt mit 1 Klick bestätigen.
+                  </p>
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 text-center">
-                6-stelliger Code aus deiner E-Mail
-              </label>
-              <input
-                type="text"
-                required
-                autoFocus
-                maxLength={6}
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="z. B. 482910"
-                className="w-full bg-dark-elevated border-2 border-emerald-500/50 rounded-2xl px-4 py-3 text-center text-2xl font-mono tracking-widest text-white focus:outline-none focus:border-emerald-400 font-bold"
-              />
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 text-center">
+                    6-stelliger Code
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    maxLength={6}
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="z. B. 482910"
+                    className="w-full bg-dark-elevated border-2 border-emerald-500/50 rounded-2xl px-4 py-3 text-center text-2xl font-mono tracking-widest text-white focus:outline-none focus:border-emerald-400 font-bold"
+                  />
+                </div>
+              </div>
             </div>
 
             <div>

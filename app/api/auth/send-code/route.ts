@@ -84,23 +84,27 @@ export async function POST(req: Request) {
           console.warn('Resend Hinweis:', error.message);
           return NextResponse.json({
             success: true,
+            emailSent: false,
             provider: 'simulated',
             warning: error.message,
             code,
-            message: `Resend Hinweis: ${error.message}`,
+            message: `Resend Sandbox: ${error.message}`,
           });
         }
 
         return NextResponse.json({
           success: true,
+          emailSent: true,
           provider: 'resend',
           id: data?.id,
+          code,
           message: `E-Mail erfolgreich via Resend an ${email} gesendet!`,
         });
       } catch (err: any) {
         console.warn('Resend Exception:', err.message);
         return NextResponse.json({
           success: true,
+          emailSent: false,
           provider: 'simulated',
           code,
           message: `Code generiert.`,
