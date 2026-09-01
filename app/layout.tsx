@@ -50,17 +50,22 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-1 pb-20 sm:pb-8">{children}</main>
 
-        {/* Service Worker Registration */}
+        {/* Purge stale Service Worker & caches to force live updates */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('FairSplit PWA ServiceWorker registriert:', registration.scope);
-                  }).catch(function(err) {
-                    console.log('ServiceWorker Fehler:', err);
-                  });
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for (var i = 0; i < registrations.length; i++) {
+                    registrations[i].unregister();
+                  }
+                });
+              }
+              if ('caches' in window) {
+                caches.keys().then(function(names) {
+                  for (var i = 0; i < names.length; i++) {
+                    caches.delete(names[i]);
+                  }
                 });
               }
             `,
