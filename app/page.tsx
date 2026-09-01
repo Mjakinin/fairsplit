@@ -145,40 +145,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Feature Highlights Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="p-4 sm:p-5 bg-dark-card border border-dark-border hover:border-purple-500/40 hover:bg-dark-elevated hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-950/20 transition-all duration-300 rounded-3xl group cursor-default">
-          <div className="w-11 h-11 rounded-2xl bg-purple-500/15 text-purple-400 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-purple-500/25 transition-all duration-300">
-            <Camera className="w-5 h-5" />
-          </div>
-          <div className="font-extrabold text-white text-sm sm:text-base group-hover:text-purple-300 transition-colors">KI-Beleg-Scanner</div>
-          <div className="text-xs text-gray-400 mt-1">Foto machen & Posten automatisch aufteilen</div>
-        </div>
 
-        <div className="p-4 sm:p-5 bg-dark-card border border-dark-border hover:border-emerald-500/40 hover:bg-dark-elevated hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/20 transition-all duration-300 rounded-3xl group cursor-default">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-emerald-500/25 transition-all duration-300">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div className="font-extrabold text-white text-sm sm:text-base group-hover:text-emerald-300 transition-colors">Min-Cash-Flow</div>
-          <div className="text-xs text-gray-400 mt-1">Minimiert unnötige Hin- und Her-Zahlungen</div>
-        </div>
-
-        <div className="p-4 sm:p-5 bg-dark-card border border-dark-border hover:border-blue-500/40 hover:bg-dark-elevated hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-950/20 transition-all duration-300 rounded-3xl group cursor-default">
-          <div className="w-11 h-11 rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-500/25 transition-all duration-300">
-            <QrCode className="w-5 h-5" />
-          </div>
-          <div className="font-extrabold text-white text-sm sm:text-base group-hover:text-blue-300 transition-colors">PayPal & GiroCode</div>
-          <div className="text-xs text-gray-400 mt-1">1-Klick Ausgleich per Banking-App oder PayPal</div>
-        </div>
-
-        <div className="p-4 sm:p-5 bg-dark-card border border-dark-border hover:border-amber-500/40 hover:bg-dark-elevated hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-950/20 transition-all duration-300 rounded-3xl group cursor-default">
-          <div className="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-amber-500/25 transition-all duration-300">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div className="font-extrabold text-white text-sm sm:text-base group-hover:text-amber-300 transition-colors">Sicher & Privat</div>
-          <div className="text-xs text-gray-400 mt-1">Kein Passwort-Stress – Code direkt per Mail</div>
-        </div>
-      </div>
 
       {/* Groups Section */}
       <div className="space-y-4">

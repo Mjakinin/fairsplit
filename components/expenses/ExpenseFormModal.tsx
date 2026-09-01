@@ -58,26 +58,19 @@ export function ExpenseFormModal({
   );
   const [percentages, setPercentages] = useState<Record<string, string>>({});
 
-  // Mode B: Itemized Receipt state
+  // Mode B: Itemized Receipt state (Starts with clean empty item)
   const [items, setItems] = useState<ExpenseItem[]>([
     {
       id: 'item-1',
-      name: 'Hauptgericht / Pizza',
-      price: 16.5,
-      quantity: 1,
-      assignments: members.map((m) => ({ user_id: m.user_id, share_count: 1 })),
-    },
-    {
-      id: 'item-2',
-      name: 'Getränke / Wein',
-      price: 14.0,
+      name: '',
+      price: 0,
       quantity: 1,
       assignments: members.map((m) => ({ user_id: m.user_id, share_count: 1 })),
     },
   ]);
 
-  const [tipType, setTipType] = useState<TipType>('percentage');
-  const [tipValue, setTipValue] = useState<number>(10); // 10%
+  const [tipType, setTipType] = useState<TipType>('fixed');
+  const [tipValue, setTipValue] = useState<number>(0);
   const [tipExactAmount, setTipExactAmount] = useState<string>('0');
   const [serviceCharge, setServiceCharge] = useState<string>('0');
   const [surchargeSplitMode, setSurchargeSplitMode] = useState<SurchargeSplitMode>('proportional');
@@ -205,21 +198,14 @@ export function ExpenseFormModal({
         setExactAmounts({});
         setShares(Object.fromEntries(members.map((m) => [m.user_id, '1'])));
         setPercentages({});
-        setTipType('percentage');
-        setTipValue(10);
+        setTipType('fixed');
+        setTipValue(0);
         setTipExactAmount('0');
         setItems([
           {
-            id: 'item-1',
-            name: 'Hauptgericht / Pizza',
-            price: 16.5,
-            quantity: 1,
-            assignments: members.map((m) => ({ user_id: m.user_id, share_count: 1 })),
-          },
-          {
-            id: 'item-2',
-            name: 'Getränke / Wein',
-            price: 14.0,
+            id: `item-${Date.now()}-1`,
+            name: '',
+            price: 0,
             quantity: 1,
             assignments: members.map((m) => ({ user_id: m.user_id, share_count: 1 })),
           },
@@ -917,35 +903,12 @@ export function ExpenseFormModal({
                       required
                       value={item.name}
                       onChange={(e) => handleUpdateItem(item.id, 'name', e.target.value)}
-                      placeholder={`Position #${index + 1} (z. B. Pizza Margherita)`}
-                      className="flex-1 bg-dark-elevated border border-dark-border rounded-xl px-3 py-2 text-xs font-semibold text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
+                      placeholder={`Position #${index + 1} Name`}
+                      className="flex-1 bg-dark-elevated border border-dark-border rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white placeholder:text-gray-500 focus:outline-none focus:border-emerald-500"
                     />
 
-                    {/* Quantity Stepper (1x, 2x, etc.) */}
-                    <div className="flex items-center bg-dark-elevated border border-dark-border rounded-xl px-1 py-0.5">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateItem(item.id, 'quantity', Math.max(1, (item.quantity || 1) - 1))}
-                        className="w-5 h-6 text-gray-400 hover:text-white flex items-center justify-center font-bold text-xs"
-                        title="Menge verringern"
-                      >
-                        -
-                      </button>
-                      <span className="px-1 text-[11px] font-mono font-bold text-emerald-400 min-w-[20px] text-center">
-                        {item.quantity || 1}x
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateItem(item.id, 'quantity', (item.quantity || 1) + 1)}
-                        className="w-5 h-6 text-gray-400 hover:text-white flex items-center justify-center font-bold text-xs"
-                        title="Menge erhöhen"
-                      >
-                        +
-                      </button>
-                    </div>
-
                     {/* Price Input */}
-                    <div className="relative w-24">
+                    <div className="relative w-28 flex-shrink-0">
                       <input
                         type="number"
                         step="0.01"
@@ -953,7 +916,7 @@ export function ExpenseFormModal({
                         value={item.price || ''}
                         onChange={(e) => handleUpdateItem(item.id, 'price', parseFloat(e.target.value) || 0)}
                         placeholder="0,00"
-                        className="w-full bg-dark-elevated border border-dark-border rounded-xl px-2.5 py-2 text-right font-bold text-white text-xs focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3 py-2.5 text-right font-black text-emerald-400 text-sm focus:outline-none focus:border-emerald-500"
                       />
                     </div>
 
@@ -962,7 +925,7 @@ export function ExpenseFormModal({
                       type="button"
                       onClick={() => handleRemoveItem(item.id)}
                       disabled={items.length <= 1}
-                      className={`p-2 text-gray-500 hover:text-rose-400 hover:bg-rose-950/30 rounded-xl transition-colors ${
+                      className={`p-2.5 text-gray-500 hover:text-rose-400 hover:bg-rose-950/30 rounded-xl transition-colors ${
                         items.length <= 1 ? 'opacity-20 cursor-not-allowed' : ''
                       }`}
                       title="Position entfernen"
@@ -971,16 +934,9 @@ export function ExpenseFormModal({
                     </button>
                   </div>
 
-                  {/* Price breakdown if quantity > 1 */}
-                  {(item.quantity || 1) > 1 && (
-                    <div className="text-[10px] text-gray-400 text-right pr-1">
-                      {item.quantity}x {formatCurrency(item.price, currency)} = <strong className="text-emerald-400 font-mono">{formatCurrency((item.quantity || 1) * item.price, currency)}</strong>
-                    </div>
-                  )}
-
                   {/* Member Assignment Chips */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-dark-border/40">
-                    <span className="text-[10px] text-gray-400 self-center pr-1">Wem gehört es?</span>
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-dark-border/40">
+                    <span className="text-xs text-gray-400 font-medium self-center pr-1">Wem gehört es?</span>
                     {members.map((member) => {
                       const isAssigned = item.assignments.some((a) => a.user_id === member.user_id);
                       return (
@@ -988,13 +944,13 @@ export function ExpenseFormModal({
                           key={member.user_id}
                           type="button"
                           onClick={() => handleToggleItemAssignment(item.id, member.user_id)}
-                          className={`py-1 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          className={`py-1.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all ${
                             isAssigned
                               ? 'bg-emerald-600 text-white shadow-sm scale-100'
                               : 'bg-dark-elevated text-gray-400 hover:text-white border border-dark-border/50 opacity-60'
                           }`}
                         >
-                          <span className="text-xs">{member.profile?.avatar_emoji || '👤'}</span>
+                          <span className="text-sm">{member.profile?.avatar_emoji || '👤'}</span>
                           <span>{member.profile?.display_name?.split(' ')[0]}</span>
                         </button>
                       );
