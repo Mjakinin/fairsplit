@@ -80,7 +80,9 @@ export async function POST(req: Request) {
         const transporter = nodemailer.createTransport(
           isGmail
             ? {
-                service: 'gmail',
+                host: 'smtp.gmail.com',
+                port: 465,
+                secure: true,
                 auth: {
                   user: smtpUser,
                   pass: cleanPass,
@@ -101,7 +103,13 @@ export async function POST(req: Request) {
           from: process.env.EMAIL_FROM || `"FairSplit" <${smtpUser}>`,
           to: email,
           subject: emailSubject,
+          text: `Dein FairSplit Sicherheitscode lautet: ${code}. Dieser Code ist 15 Minuten lang gültig.`,
           html: emailHtml,
+          headers: {
+            'X-Priority': '1',
+            'Priority': 'Urgent',
+            'Importance': 'high',
+          },
         });
 
         return NextResponse.json({
