@@ -12,10 +12,10 @@ interface AvatarProps {
 
 export function Avatar({ name, avatarUrl, avatarEmoji, size = 'md', className = '' }: AvatarProps) {
   const sizeClasses = {
-    sm: 'w-7 h-7 text-xs',
-    md: 'w-9 h-9 text-sm',
-    lg: 'w-12 h-12 text-base font-semibold',
-    xl: 'w-16 h-16 text-xl font-bold',
+    sm: 'w-8 h-8 text-sm',
+    md: 'w-11 h-11 text-base',
+    lg: 'w-14 h-14 text-lg font-semibold',
+    xl: 'w-20 h-20 text-2xl font-bold',
   };
 
   if (avatarUrl) {

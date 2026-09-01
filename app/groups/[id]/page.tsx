@@ -90,50 +90,50 @@ export default function GroupDetailPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-5 space-y-6">
       {/* 1. Group Header & Top Balance Hero */}
-      <div className="p-5 sm:p-6 bg-dark-card border border-dark-border rounded-3xl shadow-xl space-y-5">
+      <div className="p-5 sm:p-7 bg-dark-card border border-dark-border rounded-3xl shadow-xl space-y-6">
         {/* Title & Navigation */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3.5 min-w-0">
             <Link
               href="/"
-              className="p-2 -ml-1 text-gray-400 hover:text-white rounded-xl hover:bg-white/5 active:scale-95 transition-all flex-shrink-0"
+              className="p-3 -ml-1 text-gray-300 hover:text-white rounded-2xl bg-dark-elevated hover:bg-white/10 active:scale-95 transition-all flex-shrink-0 border border-dark-border"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl flex-shrink-0">{group.emoji || '💰'}</span>
-                <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight truncate">
+              <div className="flex items-center gap-2.5">
+                <span className="text-3xl sm:text-4xl flex-shrink-0">{group.emoji || '💰'}</span>
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight truncate">
                   {group.name}
                 </h1>
               </div>
               {group.description && (
-                <p className="text-xs sm:text-sm text-gray-400 mt-0.5 truncate">{group.description}</p>
+                <p className="text-sm text-gray-400 mt-1 truncate">{group.description}</p>
               )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setAnalyticsOpen(true)}
-              className="p-2.5 rounded-xl bg-dark-elevated hover:bg-white/10 text-gray-300 border border-dark-border hover:border-white/20 transition-all active:scale-95"
+              className="p-3 rounded-2xl bg-dark-elevated hover:bg-white/10 text-gray-200 border border-dark-border hover:border-white/20 transition-all active:scale-95"
               title="Statistik & Auswertung"
             >
-              <BarChart3 className="w-4 h-4 text-emerald-400" />
+              <BarChart3 className="w-5 h-5 text-emerald-400" />
             </button>
 
             <button
               onClick={() => setSettingsOpen(true)}
-              className="p-2.5 rounded-xl bg-dark-elevated hover:bg-white/10 text-gray-300 border border-dark-border hover:border-white/20 transition-all active:scale-95"
+              className="p-3 rounded-2xl bg-dark-elevated hover:bg-white/10 text-gray-200 border border-dark-border hover:border-white/20 transition-all active:scale-95"
               title="Gruppeneinstellungen"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-5 h-5" />
             </button>
 
             <button
               onClick={() => setInviteOpen(true)}
-              className="p-2.5 rounded-xl bg-dark-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/30 transition-all active:scale-95"
+              className="p-3 rounded-2xl bg-dark-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/30 transition-all active:scale-95"
               title="QR-Code & Einladungslink"
             >
               <QrCode className="w-5 h-5" />
@@ -141,22 +141,22 @@ export default function GroupDetailPage() {
 
             <button
               onClick={() => setAddExpenseOpen(true)}
-              className="py-2.5 px-3.5 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-950/40 flex items-center gap-1.5 transition-all active:scale-95"
+              className="py-3 px-4 sm:px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-950/50 flex items-center gap-2 transition-all active:scale-95"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
               <span>+ Ausgabe</span>
             </button>
           </div>
         </div>
 
         {/* Prominent Overall Balance Banner */}
-        <div className="p-4 sm:p-5 bg-gradient-to-br from-emerald-950/30 via-dark-elevated to-dark-card border border-emerald-500/30 rounded-2xl flex items-center justify-between shadow-inner">
+        <div className="p-5 sm:p-6 bg-gradient-to-br from-emerald-950/40 via-dark-elevated to-dark-card border border-emerald-500/40 rounded-3xl flex items-center justify-between shadow-xl">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-emerald-400">
               Deine Gesamtbilanz in dieser Gruppe:
             </span>
             <div
-              className={`text-2xl sm:text-3xl font-black mt-1 ${
+              className={`text-3xl sm:text-4xl font-black tracking-tight mt-1.5 ${
                 myNetBalance > 0
                   ? 'text-emerald-400'
                   : myNetBalance < 0
@@ -173,38 +173,38 @@ export default function GroupDetailPage() {
           </div>
 
           <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center border flex-shrink-0 ${
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center border flex-shrink-0 ${
               myNetBalance > 0
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
                 : myNetBalance < 0
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                ? 'bg-rose-500/15 border-rose-500/40 text-rose-400'
                 : 'bg-white/5 border-white/10 text-emerald-400'
             }`}
           >
             {myNetBalance > 0 ? (
-              <TrendingUp className="w-6 h-6" />
+              <TrendingUp className="w-7 h-7" />
             ) : myNetBalance < 0 ? (
-              <TrendingDown className="w-6 h-6" />
+              <TrendingDown className="w-7 h-7" />
             ) : (
-              <CheckCircle2 className="w-6 h-6" />
+              <CheckCircle2 className="w-7 h-7" />
             )}
           </div>
         </div>
 
         {/* 2. List of All Members Underneath Each Other with Exact Balance & Settle Action */}
-        <div className="space-y-2 pt-1">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400 px-1">
-            <span>Mitglieder & Ausgleiche ({members.length})</span>
+        <div className="space-y-3 pt-1">
+          <div className="flex items-center justify-between text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 px-1">
+            <span>Mitglieder & Abrechnung ({members.length})</span>
             <button
               onClick={() => setInviteOpen(true)}
-              className="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 lowercase tracking-normal text-xs"
+              className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 lowercase tracking-normal text-xs sm:text-sm"
             >
-              <UserPlus className="w-3.5 h-3.5" />
+              <UserPlus className="w-4 h-4" />
               <span>Freunde einladen</span>
             </button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             {members.map((member) => {
               const isMe = member.user_id === currentUser.id;
               const memberNet = balances[member.user_id]?.netBalance || 0;
@@ -220,45 +220,45 @@ export default function GroupDetailPage() {
               return (
                 <div
                   key={member.user_id}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border transition-all duration-200 ${
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-3xl border transition-all duration-200 ${
                     isMe
                       ? 'bg-emerald-950/20 border-emerald-500/40 shadow-sm'
                       : iOweMember
-                      ? 'bg-rose-950/20 border-rose-500/40 hover:border-rose-500/60 shadow-sm'
+                      ? 'bg-rose-950/20 border-rose-500/40 hover:border-rose-500/70 shadow-md'
                       : memberOwesMe
-                      ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-500/60 shadow-sm'
-                      : 'bg-dark-elevated/70 border-dark-border/60 hover:border-white/15'
+                      ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-500/70 shadow-md'
+                      : 'bg-dark-elevated/70 border-dark-border/80 hover:border-white/20'
                   }`}
                 >
                   {/* Left: Avatar + Name */}
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3.5 min-w-0">
                     <Avatar
                       name={member.profile.display_name}
                       avatarEmoji={member.profile.avatar_emoji}
-                      size="sm"
+                      size="md"
                     />
                     <div className="min-w-0">
-                      <div className="text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                      <div className="text-base font-extrabold text-white flex items-center gap-2 truncate">
                         <span>{member.profile.display_name}</span>
                         {isMe && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          <span className="text-xs px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
                             Du
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-400 truncate">
+                      <div className="text-xs sm:text-sm text-gray-400 mt-0.5 truncate">
                         {isMe ? (
-                          <span>Dein Gesamtsaldo: {memberNet >= 0 ? `+${formatCurrency(memberNet, group.currency)}` : formatCurrency(memberNet, group.currency)}</span>
+                          <span>Dein Gesamtsaldo: <strong className="text-gray-200">{memberNet >= 0 ? `+${formatCurrency(memberNet, group.currency)}` : formatCurrency(memberNet, group.currency)}</strong></span>
                         ) : iOweMember ? (
-                          <span className="text-rose-400 font-semibold">
+                          <span className="text-rose-400 font-bold">
                             Du schuldest {member.profile.display_name} {formatCurrency(iOweMember.amount, group.currency)}
                           </span>
                         ) : memberOwesMe ? (
-                          <span className="text-emerald-400 font-semibold">
+                          <span className="text-emerald-400 font-bold">
                             Schuldet dir {formatCurrency(memberOwesMe.amount, group.currency)}
                           </span>
                         ) : (
-                          <span className="text-gray-400">
+                          <span className="text-gray-400 font-medium">
                             Gesamtsaldo: {memberNet >= 0 ? `+${formatCurrency(memberNet, group.currency)}` : formatCurrency(memberNet, group.currency)} (mit dir ausgeglichen)
                           </span>
                         )}
@@ -267,10 +267,10 @@ export default function GroupDetailPage() {
                   </div>
 
                   {/* Right: Balance amount and Direct Settle Button */}
-                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 mt-2 sm:mt-0 border-t sm:border-t-0 border-dark-border/40">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-3 sm:pt-0 mt-3 sm:mt-0 border-t sm:border-t-0 border-dark-border/40">
                     {iOweMember ? (
                       <>
-                        <span className="text-sm font-extrabold text-rose-400 font-mono">
+                        <span className="text-base sm:text-lg font-black text-rose-400 font-mono">
                           -{formatCurrency(iOweMember.amount, group.currency)}
                         </span>
                         <button
@@ -282,15 +282,15 @@ export default function GroupDetailPage() {
                               amount: iOweMember.amount,
                             })
                           }
-                          className="py-1.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/40 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                          className="py-2.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-950/40 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
                         >
-                          <Wallet className="w-3.5 h-3.5" />
+                          <Wallet className="w-4 h-4" />
                           <span>Ausgleichen</span>
                         </button>
                       </>
                     ) : memberOwesMe ? (
                       <>
-                        <span className="text-sm font-extrabold text-emerald-400 font-mono">
+                        <span className="text-base sm:text-lg font-black text-emerald-400 font-mono">
                           +{formatCurrency(memberOwesMe.amount, group.currency)}
                         </span>
                         <button
@@ -302,14 +302,14 @@ export default function GroupDetailPage() {
                               amount: memberOwesMe.amount,
                             })
                           }
-                          className="py-1.5 px-3 rounded-xl bg-dark-elevated hover:bg-emerald-600/30 border border-dark-border hover:border-emerald-500/50 text-gray-300 hover:text-white font-bold text-xs transition-all active:scale-95"
+                          className="py-2.5 px-4 rounded-2xl bg-dark-elevated hover:bg-emerald-600/30 border border-dark-border hover:border-emerald-500/50 text-gray-200 hover:text-white font-bold text-xs sm:text-sm transition-all active:scale-95"
                         >
                           <span>Als bezahlt erfassen</span>
                         </button>
                       </>
                     ) : isMe ? (
                       <span
-                        className={`text-sm font-bold px-2.5 py-1 rounded-xl border ${
+                        className={`text-sm sm:text-base font-black px-3 py-1.5 rounded-2xl border ${
                           myNetBalance > 0
                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                             : myNetBalance < 0
@@ -320,7 +320,7 @@ export default function GroupDetailPage() {
                         {myNetBalance >= 0 ? `+${formatCurrency(myNetBalance, group.currency)}` : formatCurrency(myNetBalance, group.currency)}
                       </span>
                     ) : (
-                      <span className="text-xs font-semibold text-gray-400 bg-dark-elevated px-2.5 py-1 rounded-xl border border-dark-border/50">
+                      <span className="text-xs sm:text-sm font-bold text-gray-400 bg-dark-elevated px-3 py-1.5 rounded-2xl border border-dark-border/50">
                         Ausgeglichen (0,00 €)
                       </span>
                     )}

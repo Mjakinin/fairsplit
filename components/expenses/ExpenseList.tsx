@@ -77,20 +77,20 @@ export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProp
   return (
     <div className="space-y-4">
       {/* Search & Filter Bar */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="relative">
-          <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
+          <Search className="w-5 h-5 text-gray-400 absolute left-4 top-3.5" />
           <input
             type="text"
-            placeholder="Ausgaben durchsuchen..."
+            placeholder="Ausgaben nach Name oder Posten suchen..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-dark-card border border-dark-border rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-dark-card border border-dark-border rounded-2xl pl-12 pr-4 py-3.5 text-base text-white placeholder:text-gray-500 focus:outline-none focus:border-emerald-500 shadow-sm"
           />
         </div>
 
         {/* Category Pills */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {[
             { id: 'all', label: 'Alle' },
             { id: 'restaurant', label: '🍕 Restaurant' },
@@ -105,9 +105,9 @@ export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProp
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 border hover:scale-[1.04] active:scale-95 ${
+              className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 border hover:scale-[1.04] active:scale-95 shadow-sm ${
                 selectedCategory === cat.id
-                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-sm shadow-emerald-950/40'
+                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-emerald-950/40'
                   : 'bg-dark-card border-dark-border text-gray-400 hover:text-white hover:border-white/20'
               }`}
             >
@@ -119,11 +119,11 @@ export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProp
 
       {/* Filtered List */}
       {filteredExpenses.length === 0 ? (
-        <div className="text-center py-8 bg-dark-card border border-dark-border rounded-2xl">
-          <p className="text-xs text-gray-400">Keine Ausgaben entsprechen deiner Suche.</p>
+        <div className="text-center py-10 px-4 bg-dark-card border border-dark-border rounded-3xl">
+          <p className="text-sm font-medium text-gray-400">Keine Ausgaben entsprechen deiner Suche.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {filteredExpenses.map((expense) => {
             const payerSummary = expense.payers
               .map((p) => memberMap.get(p.user_id)?.display_name || p.profile?.display_name || 'Mitglied')
@@ -135,16 +135,16 @@ export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProp
               <div
                 key={expense.id}
                 onClick={() => setSelectedExpense(expense)}
-                className="flex items-center justify-between p-4 bg-dark-card hover:bg-dark-elevated border border-dark-border hover:border-emerald-500/40 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-emerald-950/20 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] cursor-pointer group"
+                className="flex items-center justify-between p-4 sm:p-5 bg-dark-card hover:bg-dark-elevated border border-dark-border hover:border-emerald-500/40 rounded-3xl shadow-md hover:shadow-xl hover:shadow-emerald-950/20 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] cursor-pointer group"
               >
                 {/* Left Icon & Details */}
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-emerald-500/40 group-hover:bg-emerald-950/20 group-hover:scale-105 transition-all duration-200">
+                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-dark-elevated border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-emerald-500/40 group-hover:bg-emerald-950/30 group-hover:scale-105 transition-all duration-200 shadow-sm">
                     {categoryIcons[expense.category] || categoryIcons.general}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-white text-sm sm:text-base truncate group-hover:text-emerald-300 transition-colors">
+                      <h4 className="font-extrabold text-white text-base sm:text-lg truncate group-hover:text-emerald-300 transition-colors">
                         {expense.title}
                       </h4>
                       {expense.split_mode === 'itemized' && (
@@ -153,27 +153,27 @@ export function ExpenseList({ expenses, members, onAddExpense }: ExpenseListProp
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">
-                      Bezahlt von <span className="text-gray-300 font-medium">{payerSummary}</span> • {formatDate(expense.expense_date)}
+                    <p className="text-xs sm:text-sm text-gray-400 mt-0.5 truncate">
+                      Bezahlt von <span className="text-gray-200 font-semibold">{payerSummary}</span> • {formatDate(expense.expense_date)}
                     </p>
                   </div>
                 </div>
 
                 {/* Right amounts */}
-                <div className="flex items-center gap-3 flex-shrink-0 pl-2">
+                <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0 pl-2">
                   <div className="text-right">
-                    <div className="text-sm sm:text-base font-extrabold text-white group-hover:text-emerald-300 transition-colors">
+                    <div className="text-base sm:text-xl font-black text-white group-hover:text-emerald-300 transition-colors">
                       {formatCurrency(expense.total_amount, expense.currency)}
                     </div>
                     {mySplit ? (
-                      <div className="text-[11px] sm:text-xs text-gray-400">
-                        Dein Anteil: <span className="font-semibold text-emerald-400">{formatCurrency(mySplit.owed_amount, expense.currency)}</span>
+                      <div className="text-xs sm:text-sm text-gray-400">
+                        Dein Anteil: <span className="font-bold text-emerald-400">{formatCurrency(mySplit.owed_amount, expense.currency)}</span>
                       </div>
                     ) : (
-                      <div className="text-[11px] text-gray-500">Nicht beteiligt</div>
+                      <div className="text-xs sm:text-sm text-gray-500 font-medium">Nicht beteiligt</div>
                     )}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all duration-200" />
+                  <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all duration-200" />
                 </div>
               </div>
             );
