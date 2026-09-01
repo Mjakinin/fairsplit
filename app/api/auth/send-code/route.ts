@@ -100,6 +100,14 @@ export async function POST(req: Request) {
         });
       } catch (smtpErr: any) {
         console.warn('SMTP Fehler:', smtpErr.message);
+        return NextResponse.json({
+          success: true,
+          emailSent: false,
+          provider: 'smtp-failed',
+          warning: smtpErr.message,
+          code,
+          message: `SMTP Fehler: ${smtpErr.message}`,
+        });
       }
     }
 
