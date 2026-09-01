@@ -66,7 +66,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     setLoading(true);
     const generated = Math.floor(100000 + Math.random() * 900000).toString();
     setExpectedCode(generated);
-    setVerificationCode(generated);
+    setVerificationCode('');
 
     fetch('/api/auth/send-code', {
       method: 'POST',
@@ -74,13 +74,17 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
       body: JSON.stringify({ email: email.trim(), code: generated, name: name.trim() }),
     })
       .then((r) => r.json())
-      .then(() => {
+      .then((data) => {
         setLoading(false);
-        setStep('verify');
+        if (!data.success) {
+          setErrorMessage(data.error || 'E-Mail konnte nicht gesendet werden.');
+        } else {
+          setStep('verify');
+        }
       })
-      .catch(() => {
+      .catch((err) => {
         setLoading(false);
-        setStep('verify');
+        setErrorMessage('Verbindungsfehler beim E-Mail-Versand.');
       });
   };
 
@@ -109,42 +113,54 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
 
       if (res.success) {
         try {
-          confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-        } catch {}
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 },
+          });
+        } catch {
+          // ignore
+        }
         onClose();
-        setStep('form');
       } else {
-        setErrorMessage(res.error || 'Fehler bei der Registrierung.');
+        setErrorMessage(res.error || 'Registrierung fehlgeschlagen.');
       }
-    }, 300);
+    }, 400);
   };
 
+  // Switch to Login
+  const handleSwitchToLogin = () => {
+    setActiveTab('login');
+    setStep('form');
+    setErrorMessage('');
+  };
+
+  // Switch to Register
+  const handleSwitchToRegister = () => {
+    setActiveTab('register');
+    setStep('form');
+    setErrorMessage('');
+  };
+
+  // Normal Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-
-    if (!loginEmail.trim()) {
-      setErrorMessage('Bitte gib deine E-Mail-Adresse ein.');
-      return;
-    }
-    if (!loginPassword) {
-      setErrorMessage('Bitte gib dein Passwort ein.');
-      return;
-    }
 
     setLoading(true);
     setTimeout(() => {
       const res = store.loginWithEmailPassword(loginEmail, loginPassword);
       setLoading(false);
+
       if (res.success) {
         onClose();
       } else {
-        setErrorMessage(res.error || 'Ungültige E-Mail oder falsches Passwort.');
+        setErrorMessage(res.error || 'Ungültige Anmeldedaten.');
       }
-    }, 300);
+    }, 400);
   };
 
-  // Forgot Password
+  // Start Forgot Password Flow
   const handleStartForgotPassword = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -157,7 +173,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     setLoading(true);
     const generated = Math.floor(100000 + Math.random() * 900000).toString();
     setExpectedCode(generated);
-    setVerificationCode(generated);
+    setVerificationCode('');
 
     fetch('/api/auth/send-code', {
       method: 'POST',
@@ -165,13 +181,17 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
       body: JSON.stringify({ email: forgotEmail.trim(), code: generated, name: 'FairSplit Nutzer' }),
     })
       .then((r) => r.json())
-      .then(() => {
+      .then((data) => {
         setLoading(false);
-        setStep('reset-verify');
+        if (!data.success) {
+          setErrorMessage(data.error || 'E-Mail konnte nicht gesendet werden.');
+        } else {
+          setStep('reset-verify');
+        }
       })
-      .catch(() => {
+      .catch((err) => {
         setLoading(false);
-        setStep('reset-verify');
+        setErrorMessage('Verbindungsfehler beim E-Mail-Versand.');
       });
   };
 
@@ -486,32 +506,9 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
               </div>
             )}
 
-            {/* 1-Click Code Box */}
-            <div className="p-3.5 bg-emerald-950/30 border border-emerald-500/40 rounded-2xl space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-emerald-300 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                  <span>Dein Aktivierungscode:</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setVerificationCode(expectedCode)}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs active:scale-95 transition-all shadow"
-                >
-                  Code übernehmen
-                </button>
-              </div>
-              <div className="text-2xl font-mono font-black text-center text-white tracking-widest bg-dark-bg/60 py-2 rounded-xl border border-emerald-500/30">
-                {expectedCode}
-              </div>
-              <p className="text-[11px] text-gray-400 text-center">
-                Code per E-Mail gesendet oder hier direkt mit 1 Klick bestätigen.
-              </p>
-            </div>
-
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 text-center">
-                6-stelliger Code
+                6-stelliger Code aus deiner E-Mail
               </label>
               <input
                 type="text"
@@ -630,32 +627,9 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
               </div>
             )}
 
-            {/* 1-Click Code Box */}
-            <div className="p-3.5 bg-emerald-950/30 border border-emerald-500/40 rounded-2xl space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-emerald-300 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                  <span>Dein Reset-Code:</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setVerificationCode(expectedCode)}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs active:scale-95 transition-all shadow"
-                >
-                  Code übernehmen
-                </button>
-              </div>
-              <div className="text-2xl font-mono font-black text-center text-white tracking-widest bg-dark-bg/60 py-2 rounded-xl border border-emerald-500/30">
-                {expectedCode}
-              </div>
-              <p className="text-[11px] text-gray-400 text-center">
-                Code per E-Mail gesendet oder hier direkt mit 1 Klick bestätigen.
-              </p>
-            </div>
-
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5 text-center">
-                6-stelliger Code
+                6-stelliger Code aus deiner E-Mail
               </label>
               <input
                 type="text"

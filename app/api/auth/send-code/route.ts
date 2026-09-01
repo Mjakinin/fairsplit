@@ -66,23 +66,36 @@ export async function POST(req: Request) {
 </html>
 `;
 
-    // 1. Check for Standard SMTP first if configured (e.g. Gmail App-Passwort, Strato, IONOS, Brevo - sends to ALL emails worldwide)
-    const smtpHost = process.env.SMTP_HOST;
+    // 1. Check for Standard SMTP / Gmail (Sends real emails worldwide)
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
 
-    if (smtpHost && smtpUser && smtpPass) {
+    if (smtpUser && smtpPass) {
       try {
-        const transporter = nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: {
-            user: smtpUser,
-            pass: smtpPass,
-          },
-        });
+        const cleanPass = smtpPass.replace(/\s+/g, '');
+        const isGmail = smtpHost.includes('gmail') || smtpUser.includes('@gmail.com');
+
+        const transporter = nodemailer.createTransport(
+          isGmail
+            ? {
+                service: 'gmail',
+                auth: {
+                  user: smtpUser,
+                  pass: cleanPass,
+                },
+              }
+            : {
+                host: smtpHost,
+                port: smtpPort,
+                secure: smtpPort === 465,
+                auth: {
+                  user: smtpUser,
+                  pass: cleanPass,
+                },
+              }
+        );
 
         await transporter.sendMail({
           from: process.env.EMAIL_FROM || `"FairSplit" <${smtpUser}>`,
@@ -94,24 +107,21 @@ export async function POST(req: Request) {
         return NextResponse.json({
           success: true,
           emailSent: true,
-          provider: 'smtp',
-          code,
-          message: `E-Mail erfolgreich via SMTP an ${email} gesendet!`,
+          message: `Bestätigungscode erfolgreich an ${email} gesendet!`,
         });
       } catch (smtpErr: any) {
-        console.warn('SMTP Fehler:', smtpErr.message);
-        return NextResponse.json({
-          success: true,
-          emailSent: false,
-          provider: 'smtp-failed',
-          warning: smtpErr.message,
-          code,
-          message: `SMTP Fehler: ${smtpErr.message}`,
-        });
+        console.error('SMTP Sende-Fehler:', smtpErr);
+        return NextResponse.json(
+          {
+            success: false,
+            error: `E-Mail konnte nicht zugestellt werden: ${smtpErr.message || 'SMTP Fehler'}`,
+          },
+          { status: 500 }
+        );
       }
     }
 
-    // 2. Check for RESEND_API_KEY (Recommended for verified domains on Vercel / Netlify)
+    // 2. Fallback: Check for RESEND_API_KEY if SMTP is not provided
     const resendApiKey = process.env.RESEND_API_KEY;
     if (resendApiKey) {
       try {
@@ -126,44 +136,41 @@ export async function POST(req: Request) {
         });
 
         if (error) {
-          console.warn('Resend Hinweis:', error.message);
-          return NextResponse.json({
-            success: true,
-            emailSent: false,
-            provider: 'simulated',
-            warning: error.message,
-            code,
-            message: `Resend Sandbox: ${error.message}`,
-          });
+          console.warn('Resend Fehler:', error.message);
+          return NextResponse.json(
+            {
+              success: false,
+              error: `E-Mail-Versand fehlgeschlagen: ${error.message}`,
+            },
+            { status: 422 }
+          );
         }
 
         return NextResponse.json({
           success: true,
           emailSent: true,
-          provider: 'resend',
           id: data?.id,
-          code,
-          message: `E-Mail erfolgreich via Resend an ${email} gesendet!`,
+          message: `E-Mail erfolgreich an ${email} gesendet!`,
         });
       } catch (err: any) {
         console.warn('Resend Exception:', err.message);
-        return NextResponse.json({
-          success: true,
-          emailSent: false,
-          provider: 'simulated',
-          code,
-          message: `Code generiert.`,
-        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: `E-Mail-Versand fehlgeschlagen: ${err.message}`,
+          },
+          { status: 500 }
+        );
       }
     }
 
-    // 3. Fallback for Local Development & Previews without configured keys
-    return NextResponse.json({
-      success: true,
-      provider: 'simulated',
-      code,
-      message: `Code ${code} generiert (Simulations-Modus).`,
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Kein E-Mail-Dienst (SMTP_USER / SMTP_PASS) konfiguriert.',
+      },
+      { status: 500 }
+    );
   } catch (error: any) {
     console.error('E-Mail Versende-Fehler:', error);
     return NextResponse.json(
