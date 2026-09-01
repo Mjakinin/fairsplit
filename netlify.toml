@@ -5,6 +5,8 @@
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "SMTP_HOST,SMTP_PORT,EMAIL_FROM,NEXT_PUBLIC_APP_URL"
   SECRETS_SCAN_OMIT_PATHS = ".env.example"
+  NETLIFY_FEEDBACK_DISABLED = "true"
+  NETLIFY_DRAWERS_DISABLED = "true"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

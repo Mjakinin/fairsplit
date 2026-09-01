@@ -80,3 +80,21 @@ html, body, * {
   user-select: none;
 }
 
+/* Hide Netlify Feedback Drawer & Badge */
+#netlify-drawer-container,
+[data-netlify-drawer],
+.netlify-badge,
+#netlify-feedback-badge,
+div[data-netlify-deploy-id],
+iframe[title*="Netlify"],
+iframe[id*="netlify"],
+netlify-drawer {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
