@@ -217,12 +217,10 @@ export function ExpenseFormModal({
   // Smart Auto-Category Detection on Title change
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
-    if (!isCategoryManuallySet) {
-      const detected = detectCategoryFromTitle(newTitle);
-      if (detected) {
-        setCategory(detected);
-        setAutoDetected(true);
-      }
+    const detected = detectCategoryFromTitle(newTitle);
+    if (detected) {
+      setCategory(detected);
+      setAutoDetected(true);
     }
   };
 
@@ -960,14 +958,14 @@ export function ExpenseFormModal({
               ))}
             </div>
 
-            {/* NOTICEABLE "+ POSITION HINZUFÜGEN" BUTTON DIRECTLY BELOW THE LAST ITEM */}
+            {/* NOTICEABLE "+ WEITERES ITEM HINZUFÜGEN" BUTTON DIRECTLY BELOW THE LAST ITEM */}
             <button
               type="button"
               onClick={handleAddItem}
               className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/30 border-2 border-dashed border-emerald-500/50 hover:border-emerald-400 text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-md shadow-emerald-950/40"
             >
               <Plus className="w-4 h-4 text-emerald-400" />
-              <span>+ Weitere Position hinzufügen</span>
+              <span>+ Weiteres Item hinzufügen</span>
             </button>
 
             {/* TRINKGELD IN € & CENT SOWIE % */}

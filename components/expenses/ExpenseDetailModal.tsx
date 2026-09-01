@@ -103,7 +103,7 @@ export function ExpenseDetailModal({ expense, members, isOpen, onClose }: Expens
             <div>
               <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
                 <Receipt className="w-4 h-4" />
-                <span>Einzelposten des Belegs</span>
+                <span>Items des Belegs</span>
               </h4>
               <div className="space-y-2.5">
                 {expense.items.map((item) => (

@@ -16,7 +16,7 @@ const CATEGORY_RULES: CategoryRule[] = [
       'ice cream', 'gelato', 'italienisch', 'spanier', 'tapas', 'grieche', 'asiate',
       'chinesisch', 'steak', 'bbq', 'grillen', 'imbiss', 'snack', 'lieferando', 'wolt',
       'ubereats', 'mcdonalds', 'burger king', 'kfc', 'subway', 'pizzeria', 'trattoria',
-      'ostería', 'ristorante', 'pub', 'club'
+      'osteria', 'ristorante', 'pub', 'club', 'essen', 'food', 'speisen', 'gaststätte', 'wirtshaus'
     ],
   },
   {
@@ -25,7 +25,7 @@ const CATEGORY_RULES: CategoryRule[] = [
       'einkauf', 'einkaufen', 'supermarkt', 'supermarket', 'lebensmittel', 'groceries',
       'rewe', 'edeka', 'aldi', 'lidl', 'kaufland', 'penny', 'netto', 'spar', 'coop', 'migros',
       'drogerie', 'dm', 'rossmann', 'müller', 'wocheneinkauf', 'markt', 'obst', 'gemüse',
-      'getränkemarkt', 'bio', 'alnatura', 'denns', 'bäcker', 'metzger', 'fleischer'
+      'getränkemarkt', 'bio', 'alnatura', 'denns', 'bäcker', 'metzger', 'fleischer', 'woche'
     ],
   },
   {
@@ -38,7 +38,7 @@ const CATEGORY_RULES: CategoryRule[] = [
       'bus', 'tram', 'straßenbahn', 'u-bahn', 'metro', 'subway', 's-bahn', 'flughafen',
       'airport', 'parken', 'parking', 'parkhaus', 'parkticket', 'maut', 'toll', 'vignette',
       'roller', 'scooter', 'tier', 'lime', 'bolt scooter', 'voi', 'carsharing', 'sixt',
-      'miles', 'share now', 'mietwagen', 'rental car', 'fähre', 'ferry'
+      'miles', 'share now', 'mietwagen', 'rental car', 'fähre', 'ferry', 'fahrt'
     ],
   },
   {
@@ -46,7 +46,7 @@ const CATEGORY_RULES: CategoryRule[] = [
     keywords: [
       'hotel', 'airbnb', 'ferienwohnung', 'ferienhaus', 'unterkunft', 'accommodation',
       'hostel', 'booking', 'booking.com', 'übernachtung', 'chalet', 'hütte', 'camping',
-      'zeltplatz', 'motel', 'resort', 'pension', 'zimmer', 'room'
+      'zeltplatz', 'motel', 'resort', 'pension', 'zimmer', 'room', 'urlaub', 'residenz'
     ],
   },
   {
@@ -57,7 +57,7 @@ const CATEGORY_RULES: CategoryRule[] = [
       'skipass', 'ski pass', 'skigebiet', 'therme', 'spa', 'wellness', 'sauna', 'bowling',
       'billiard', 'escape room', 'freizeitpark', 'amusement park', 'europapark', 'phantasialand',
       'zoo', 'aquarium', 'kart', 'kartbahn', 'paintball', 'lasertag', 'minigolf', 'golf',
-      'boot', 'bootsverleih', 'kayak', 'kanu', 'sup'
+      'boot', 'bootsverleih', 'kayak', 'kanu', 'sup', 'ski', 'event', 'ausflug'
     ],
   },
   {
@@ -73,7 +73,7 @@ const CATEGORY_RULES: CategoryRule[] = [
     category: 'cafe',
     keywords: [
       'café', 'cafe', 'espresso', 'cappuccino', 'latte', 'starbucks', 'bäckerei', 'kuchen',
-      'torte', 'törtchen', 'croissant', 'matcha', 'tee', 'tea', 'bubble tea'
+      'torte', 'törtchen', 'croissant', 'matcha', 'tee', 'tea', 'bubble tea', 'eis', 'ice'
     ],
   },
 ];
@@ -84,8 +84,7 @@ export function detectCategoryFromTitle(title: string): Expense['category'] | nu
 
   for (const rule of CATEGORY_RULES) {
     for (const kw of rule.keywords) {
-      // Check if keyword is in the title as a word or substring
-      if (normalized.includes(kw)) {
+      if (normalized.includes(kw.toLowerCase())) {
         return rule.category;
       }
     }

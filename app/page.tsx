@@ -174,27 +174,18 @@ export default function HomePage() {
             <div className="space-y-2 max-w-sm mx-auto">
               <h3 className="text-xl sm:text-2xl font-black text-white">Noch keine Gruppen vorhanden</h3>
               <p className="text-sm text-gray-400">
-                Starte deine eigene Gruppe oder sieh dir die interaktive Demo an, um alle Funktionen direkt auszuprobieren.
+                Starte deine erste Gruppe, um Rechnungen und Ausgaben entspannt mit Freunden zu teilen.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 max-w-md mx-auto">
+            <div className="flex items-center justify-center pt-2 max-w-md mx-auto">
               <button
                 type="button"
                 onClick={() => setCreateGroupOpen(true)}
-                className="w-full sm:w-auto py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-base shadow-xl shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all active:scale-95"
+                className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-base shadow-xl shadow-emerald-950/50 flex items-center justify-center gap-2.5 transition-all active:scale-95 hover:scale-105"
               >
                 <Plus className="w-5 h-5" />
                 <span>Erste Gruppe erstellen</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleLoadDemo}
-                className="w-full sm:w-auto py-4 px-6 rounded-2xl bg-dark-elevated hover:bg-white/10 border border-dark-border text-emerald-300 font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
-              >
-                <Sparkles className="w-5 h-5 text-emerald-400" />
-                <span>✨ Interaktive Demo ansehen</span>
               </button>
             </div>
           </div>

@@ -185,34 +185,11 @@ export function UserProfileDrawer({ isOpen, onClose, onOpenAuth }: UserProfileDr
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full py-3 px-4 rounded-xl bg-dark-elevated hover:bg-rose-950/20 border border-dark-border hover:border-rose-500/40 text-gray-300 hover:text-rose-300 font-semibold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+            className="w-full py-3.5 px-4 rounded-2xl bg-dark-elevated hover:bg-rose-950/20 border border-dark-border hover:border-rose-500/40 text-gray-300 hover:text-rose-300 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
           >
             <LogOut className="w-4 h-4 text-rose-400" />
             <span>Abmelden (Logout)</span>
           </button>
-        </div>
-
-        {/* Developer & Test Actions */}
-        <div className="pt-4 border-t border-dark-border/60 space-y-2">
-          <div className="text-xs text-gray-400 font-medium">Testen & Datenverwaltung:</div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={handleLoadDemoData}
-              className="py-2 px-3 rounded-xl bg-dark-card hover:bg-dark-elevated border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>Demo laden</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleClearAll}
-              className="py-2 px-3 rounded-xl bg-dark-card hover:bg-rose-950/20 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Alles leeren</span>
-            </button>
-          </div>
         </div>
       </form>
     </BottomSheet>
