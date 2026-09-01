@@ -256,7 +256,7 @@ export default function GroupDetailPage() {
             <span>Mitglieder & Abrechnung ({members.length})</span>
             <button
               onClick={() => setInviteOpen(true)}
-              className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 lowercase tracking-normal text-xs sm:text-sm"
+              className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 normal-case tracking-normal text-xs sm:text-sm"
             >
               <UserPlus className="w-4 h-4" />
               <span>Freunde einladen</span>
