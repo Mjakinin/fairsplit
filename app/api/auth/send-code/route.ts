@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 `;
 
     // 1. Check for Standard SMTP / Gmail (Sends real emails worldwide)
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpHost = process.env.SMTP_HOST;
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
@@ -75,21 +75,19 @@ export async function POST(req: Request) {
     if (smtpUser && smtpPass) {
       try {
         const cleanPass = smtpPass.replace(/\s+/g, '');
-        const isGmail = smtpHost.includes('gmail') || smtpUser.includes('@gmail.com');
+        const isGmail = (smtpHost && smtpHost.toLowerCase().includes('gmail')) || smtpUser.toLowerCase().includes('@gmail.com');
 
         const transporter = nodemailer.createTransport(
           isGmail
             ? {
-                host: 'smtp.gmail.com',
-                port: 465,
-                secure: true,
+                service: 'gmail',
                 auth: {
                   user: smtpUser,
                   pass: cleanPass,
                 },
               }
             : {
-                host: smtpHost,
+                host: smtpHost || 'localhost',
                 port: smtpPort,
                 secure: smtpPort === 465,
                 auth: {
