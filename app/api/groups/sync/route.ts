@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// In-memory server cache for groups across serverless invocations
-const serverGroupCache = new Map<string, any>();
-const tokenToIdMap = new Map<string, string>();
+import { ServerGroupStore } from '@/lib/server/groupStore';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    if (!body || !body.id) {
+    if (!body || (!body.id && !body.group?.id)) {
       return NextResponse.json({ error: 'Missing group id' }, { status: 400 });
     }
 
-    serverGroupCache.set(body.id, body);
-    if (body.invite_token) {
-      tokenToIdMap.set(body.invite_token.toLowerCase(), body.id);
-    }
+    const payload = body.group ? body : { group: body, members: body.members || [] };
+    const updated = ServerGroupStore.saveOrMergeGroup(payload);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, bundle: updated });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -27,15 +22,17 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get('token');
   const id = searchParams.get('id');
 
-  if (id && serverGroupCache.has(id)) {
-    return NextResponse.json({ success: true, group: serverGroupCache.get(id) });
+  if (id) {
+    const bundle = ServerGroupStore.getGroupBundle(id);
+    if (bundle) {
+      return NextResponse.json({ success: true, group: bundle.group, bundle });
+    }
   }
 
   if (token) {
-    const tokenLower = token.toLowerCase();
-    const groupId = tokenToIdMap.get(tokenLower);
-    if (groupId && serverGroupCache.has(groupId)) {
-      return NextResponse.json({ success: true, group: serverGroupCache.get(groupId) });
+    const bundle = ServerGroupStore.getGroupByToken(token);
+    if (bundle) {
+      return NextResponse.json({ success: true, group: bundle.group, bundle });
     }
   }
 

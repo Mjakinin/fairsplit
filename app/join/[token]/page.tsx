@@ -39,32 +39,22 @@ export default function JoinGroupPage() {
       }
     }
 
-    // 2. If still not found, check server-side sync API
-    if (!resolvedGroup) {
-      fetch(`/api/groups/sync?token=${encodeURIComponent(token)}`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success && data.group) {
-            const imported = store.importGroupFromPayload({
-              id: data.group.id,
-              name: data.group.name,
-              emoji: data.group.emoji,
-              currency: data.group.currency,
-              description: data.group.description,
-              invite_token: data.group.invite_token || token,
-            });
-            setGroup(imported);
-          }
-          setLoading(false);
-        })
-        .catch(() => {
-          setLoading(false);
-        });
-      return;
-    }
-
-    setGroup(resolvedGroup);
-    setLoading(false);
+    // 2. Fetch full remote group bundle from server to get all members, expenses, and activity
+    fetch(`/api/groups/sync?token=${encodeURIComponent(token)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.bundle) {
+          const imported = store.importGroupBundle(data.bundle);
+          if (imported) setGroup(imported);
+        } else if (resolvedGroup) {
+          setGroup(resolvedGroup);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (resolvedGroup) setGroup(resolvedGroup);
+        setLoading(false);
+      });
   }, [token, dataParam]);
 
   if (loading) {

@@ -182,6 +182,29 @@ function saveToStorage() {
   }
 }
 
+function pushGroupChanges(groupId: string) {
+  if (typeof window === 'undefined') return;
+  initStore();
+  const group = globalGroups.find((g) => g.id === groupId);
+  if (!group) return;
+  const members = globalMembers.filter((m) => m.group_id === groupId);
+  const expenses = globalExpenses.filter((e) => e.group_id === groupId);
+  const settlements = globalSettlements.filter((s) => s.group_id === groupId);
+  const activity = globalActivity.filter((a) => a.group_id === groupId);
+
+  fetch(`/api/groups/${groupId}/sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      group,
+      members,
+      expenses,
+      settlements,
+      activity,
+    }),
+  }).catch(() => {});
+}
+
 export const FairSplitStore = {
   getCurrentUser(): Profile {
     initStore();
@@ -453,6 +476,111 @@ export const FairSplitStore = {
     };
   },
 
+  importGroupBundle(bundle: any): Group | null {
+    initStore();
+    if (!bundle || !bundle.group) return null;
+    const groupId = bundle.group.id;
+    let changed = false;
+
+    // Group
+    const gIndex = globalGroups.findIndex((g) => g.id === groupId);
+    if (gIndex === -1) {
+      globalGroups = [bundle.group, ...globalGroups];
+      changed = true;
+    } else {
+      globalGroups[gIndex] = { ...globalGroups[gIndex], ...bundle.group };
+      changed = true;
+    }
+
+    // Members
+    if (bundle.members && Array.isArray(bundle.members)) {
+      const existingMembers = new Map<string, GroupMember>();
+      globalMembers.filter((m) => m.group_id === groupId).forEach((m) => existingMembers.set(m.user_id, m));
+      bundle.members.forEach((m: GroupMember) => {
+        if (!existingMembers.has(m.user_id)) {
+          globalMembers.push(m);
+          changed = true;
+        } else {
+          const prev = existingMembers.get(m.user_id)!;
+          if (JSON.stringify(prev.profile) !== JSON.stringify(m.profile) || prev.role !== m.role) {
+            const idx = globalMembers.findIndex((gm) => gm.group_id === groupId && gm.user_id === m.user_id);
+            if (idx !== -1) {
+              globalMembers[idx] = m;
+              changed = true;
+            }
+          }
+        }
+      });
+    }
+
+    // Expenses
+    if (bundle.expenses && Array.isArray(bundle.expenses)) {
+      const expMap = new Map<string, Expense>();
+      globalExpenses.filter((e) => e.group_id === groupId).forEach((e) => expMap.set(e.id, e));
+      bundle.expenses.forEach((e: Expense) => {
+        if (!expMap.has(e.id)) {
+          globalExpenses.push(e);
+          changed = true;
+        } else {
+          const idx = globalExpenses.findIndex((ge) => ge.id === e.id);
+          if (idx !== -1) {
+            globalExpenses[idx] = e;
+            changed = true;
+          }
+        }
+      });
+    }
+
+    // Settlements
+    if (bundle.settlements && Array.isArray(bundle.settlements)) {
+      const setMap = new Map<string, Settlement>();
+      globalSettlements.filter((s) => s.group_id === groupId).forEach((s) => setMap.set(s.id, s));
+      bundle.settlements.forEach((s: Settlement) => {
+        if (!setMap.has(s.id)) {
+          globalSettlements.push(s);
+          changed = true;
+        }
+      });
+    }
+
+    // Activity
+    if (bundle.activity && Array.isArray(bundle.activity)) {
+      const actMap = new Map<string, ActivityLog>();
+      globalActivity.filter((a) => a.group_id === groupId).forEach((a) => actMap.set(a.id, a));
+      bundle.activity.forEach((a: ActivityLog) => {
+        if (!actMap.has(a.id)) {
+          globalActivity.push(a);
+          changed = true;
+        }
+      });
+    }
+
+    if (changed) {
+      saveToStorage();
+      notify();
+    }
+
+    return this.getGroupById(groupId);
+  },
+
+  async syncGroupWithServer(groupId: string): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+    initStore();
+    try {
+      const res = await fetch(`/api/groups/${groupId}/sync`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.bundle) {
+          this.importGroupBundle(data.bundle);
+        }
+      }
+      pushGroupChanges(groupId);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
   createGroup(name: string, description = '', emoji = '💰', currency: CurrencyCode = 'EUR'): Group {
     initStore();
     const currentUser = this.getCurrentUser();
@@ -497,15 +625,7 @@ export const FairSplitStore = {
     saveToStorage();
     notify();
 
-    // Sync to serverless memory in background
-    if (typeof window !== 'undefined') {
-      fetch('/api/groups/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newGroup, members: [newMember] }),
-      }).catch(() => {});
-    }
-
+    pushGroupChanges(newGroup.id);
     return newGroup;
   },
 
@@ -523,6 +643,7 @@ export const FairSplitStore = {
     globalGroups = globalGroups.map((g) => (g.id === groupId ? updated : g));
     saveToStorage();
     notify();
+    pushGroupChanges(groupId);
     return updated;
   },
 
@@ -540,7 +661,10 @@ export const FairSplitStore = {
   joinGroup(groupId: string, user: Profile): boolean {
     initStore();
     const existing = globalMembers.find((m) => m.group_id === groupId && m.user_id === user.id);
-    if (existing) return true;
+    if (existing) {
+      pushGroupChanges(groupId);
+      return true;
+    }
 
     const newMember: GroupMember = {
       id: `mem-${Date.now()}`,
@@ -568,6 +692,7 @@ export const FairSplitStore = {
 
     saveToStorage();
     notify();
+    pushGroupChanges(groupId);
     return true;
   },
 
@@ -594,6 +719,7 @@ export const FairSplitStore = {
 
     saveToStorage();
     notify();
+    pushGroupChanges(groupId);
     return true;
   },
 
@@ -634,6 +760,7 @@ export const FairSplitStore = {
 
     saveToStorage();
     notify();
+    pushGroupChanges(newExpense.group_id);
     return newExpense;
   },
 
@@ -668,6 +795,7 @@ export const FairSplitStore = {
 
     saveToStorage();
     notify();
+    pushGroupChanges(exp.group_id);
     return updated;
   },
 
@@ -696,6 +824,7 @@ export const FairSplitStore = {
 
     saveToStorage();
     notify();
+    pushGroupChanges(exp.group_id);
   },
 
   // Settlements
@@ -737,6 +866,7 @@ export const FairSplitStore = {
 
     saveToStorage();
     notify();
+    pushGroupChanges(newSettlement.group_id);
     return newSettlement;
   },
 
@@ -764,6 +894,7 @@ export const FairSplitStore = {
 
     saveToStorage();
     notify();
+    pushGroupChanges(settlement.group_id);
   },
 
   // Activity Logs

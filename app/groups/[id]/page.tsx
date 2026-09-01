@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useFairSplitStore } from '@/lib/supabase/store';
@@ -30,6 +30,36 @@ export default function GroupDetailPage() {
   const store = useFairSplitStore();
   const group = store.getGroupById(groupId);
   const currentUser = store.getCurrentUser();
+
+  // Background Cloud Sync & Polling for real-time multi-user updates
+  useEffect(() => {
+    if (!groupId) return;
+
+    // 1. Initial sync
+    store.syncGroupWithServer(groupId);
+
+    // 2. Periodic sync every 3.5 seconds
+    const interval = setInterval(() => {
+      store.syncGroupWithServer(groupId);
+    }, 3500);
+
+    // 3. Sync on focus or visibility change
+    const onFocus = () => store.syncGroupWithServer(groupId);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        store.syncGroupWithServer(groupId);
+      }
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [groupId]);
 
   const [activeTab, setActiveTab] = useState<'expenses' | 'activity'>('expenses');
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
