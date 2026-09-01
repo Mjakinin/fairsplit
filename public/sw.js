@@ -1,6 +1,5 @@
-const CACHE_NAME = 'fairsplit-pwa-v1';
+const CACHE_NAME = 'fairsplit-pwa-v2';
 const PRECACHE_ASSETS = [
-  '/',
   '/manifest.json',
   '/favicon.svg',
   '/icons/icon-192.png',
@@ -9,8 +8,9 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
   );
 });
 
@@ -28,7 +28,19 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Stale-While-Revalidate Strategy
+  // Never cache API routes or dynamic pages
+  if (url.pathname.startsWith('/api/')) return;
+
+  // Network-First for HTML navigation so updates are instant
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for static assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request)
