@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useFairSplitStore } from '@/lib/supabase/store';
-import { calculateUserBalances, simplifyDebts } from '@/lib/algorithms/debtSimplification';
+import { calculateUserBalances, simplifyDebts, calculateDirectPairwiseDebts } from '@/lib/algorithms/debtSimplification';
 import { formatCurrency } from '@/lib/utils/format';
 import { Tabs } from '@/components/ui/Tabs';
 import { Avatar } from '@/components/ui/Avatar';
@@ -19,7 +19,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { 
   Receipt, History, Plus, QrCode, ArrowLeft, 
   Users, UserPlus, Sparkles, Settings, BarChart3, 
-  ArrowRight, CheckCircle2, TrendingUp, TrendingDown, Wallet
+  ArrowRight, CheckCircle2, TrendingUp, TrendingDown, Wallet, Split
 } from 'lucide-react';
 
 export default function GroupDetailPage() {
@@ -68,8 +68,15 @@ export default function GroupDetailPage() {
   // Balances calculation
   const memberProfiles = members.map((m) => m.profile);
   const balances = calculateUserBalances(memberProfiles, expenses, settlements);
-  const simplified = simplifyDebts(balances, group.currency);
+  const isSimplified = group.simplify_debts !== false;
+  const debts = isSimplified
+    ? simplifyDebts(balances, group.currency)
+    : calculateDirectPairwiseDebts(memberProfiles, expenses, settlements, group.currency);
   const myNetBalance = balances[currentUser.id]?.netBalance || 0;
+
+  const handleToggleDebtSimplification = () => {
+    store.updateGroup(groupId, { simplify_debts: !isSimplified });
+  };
 
   // Tabs: only Ausgaben and Verlauf
   const tabs = [
@@ -191,7 +198,59 @@ export default function GroupDetailPage() {
           </div>
         </div>
 
-        {/* 2. List of All Members Underneath Each Other with Exact Balance & Settle Action */}
+        {/* 2. Debt Simplification (Min-Cash-Flow) Schieberegler Toggle */}
+        <div className="p-4 sm:p-5 bg-dark-card border border-dark-border/80 rounded-3xl flex items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center border flex-shrink-0 transition-colors ${
+                isSimplified
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-sm'
+                  : 'bg-dark-elevated border-dark-border text-gray-400'
+              }`}
+            >
+              {isSimplified ? <Sparkles className="w-5 h-5" /> : <Split className="w-5 h-5" />}
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
+                <span>Schulden minimieren (Min-Cash-Flow)</span>
+                <span
+                  className={`text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-lg border ${
+                    isSimplified
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-dark-elevated text-gray-400 border-dark-border'
+                  }`}
+                >
+                  {isSimplified ? 'Aktiviert' : 'Deaktiviert'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {isSimplified
+                  ? 'Zahlungen minimiert: Du zahlst nur an 1 Person statt an jeden einzeln.'
+                  : 'Direkte 1:1 Abrechnung: Exakte Original-Schulden je Ausgabe ohne Querverrechnung.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Switch Toggle Button */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isSimplified}
+            onClick={handleToggleDebtSimplification}
+            className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              isSimplified ? 'bg-emerald-600' : 'bg-dark-border'
+            }`}
+            title="Schulden-Minimierung umschalten"
+          >
+            <span
+              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                isSimplified ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* 3. List of All Members Underneath Each Other with Exact Balance & Settle Action */}
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 px-1">
             <span>Mitglieder & Abrechnung ({members.length})</span>
@@ -209,11 +268,11 @@ export default function GroupDetailPage() {
               const isMe = member.user_id === currentUser.id;
               const memberNet = balances[member.user_id]?.netBalance || 0;
 
-              // Check if there is a simplified direct debt relation between currentUser and member
-              const iOweMember = simplified.find(
+              // Check if there is a direct debt relation between currentUser and member
+              const iOweMember = debts.find(
                 (d) => d.fromUser.id === currentUser.id && d.toUser.id === member.user_id
               );
-              const memberOwesMe = simplified.find(
+              const memberOwesMe = debts.find(
                 (d) => d.fromUser.id === member.user_id && d.toUser.id === currentUser.id
               );
 

@@ -155,3 +155,91 @@ export function simplifyDebts(
 
   return result;
 }
+
+/**
+ * Calculates direct 1-to-1 pairwise debts without simplifying through intermediaries.
+ * Used when debt simplification (Min-Cash-Flow) is deactivated.
+ */
+export function calculateDirectPairwiseDebts(
+  members: Profile[],
+  expenses: Expense[],
+  settlements: Settlement[],
+  currency: CurrencyCode = 'EUR'
+): SimplifiedDebt[] {
+  const profileMap = new Map(members.map((m) => [m.id, m]));
+  const debtMatrix: Record<string, Record<string, number>> = {};
+
+  for (const m1 of members) {
+    debtMatrix[m1.id] = {};
+    for (const m2 of members) {
+      debtMatrix[m1.id][m2.id] = 0;
+    }
+  }
+
+  // 1. For each expense, calculate who owes each payer
+  for (const expense of expenses) {
+    const totalPaid = (expense.payers || []).reduce((sum, p) => sum + Number(p.amount_paid), 0);
+    if (totalPaid <= 0) continue;
+
+    for (const split of expense.splits || []) {
+      const splitAmount = Number(split.owed_amount);
+      if (splitAmount <= 0) continue;
+
+      for (const payer of expense.payers || []) {
+        const payerPaid = Number(payer.amount_paid);
+        if (payerPaid <= 0 || payer.user_id === split.user_id) continue;
+
+        const fraction = payerPaid / totalPaid;
+        const owedToPayer = splitAmount * fraction;
+
+        if (!debtMatrix[split.user_id]) debtMatrix[split.user_id] = {};
+        debtMatrix[split.user_id][payer.user_id] = (debtMatrix[split.user_id][payer.user_id] || 0) + owedToPayer;
+      }
+    }
+  }
+
+  // 2. Subtract settlements
+  for (const settlement of settlements) {
+    const amount = Number(settlement.amount);
+    if (amount <= 0) continue;
+
+    if (!debtMatrix[settlement.payer_id]) debtMatrix[settlement.payer_id] = {};
+    debtMatrix[settlement.payer_id][settlement.payee_id] =
+      (debtMatrix[settlement.payer_id][settlement.payee_id] || 0) - amount;
+  }
+
+  // 3. Reconcile pairs (A owes B vs B owes A)
+  const results: SimplifiedDebt[] = [];
+  const processedPairs = new Set<string>();
+
+  for (const m1 of members) {
+    for (const m2 of members) {
+      if (m1.id === m2.id) continue;
+      const pairKey = [m1.id, m2.id].sort().join('_');
+      if (processedPairs.has(pairKey)) continue;
+      processedPairs.add(pairKey);
+
+      const m1OwesM2 = debtMatrix[m1.id]?.[m2.id] || 0;
+      const m2OwesM1 = debtMatrix[m2.id]?.[m1.id] || 0;
+      const net = Math.round((m1OwesM2 - m2OwesM1) * 100) / 100;
+
+      if (net > 0.009) {
+        results.push({
+          fromUser: m1,
+          toUser: m2,
+          amount: net,
+          currency,
+        });
+      } else if (net < -0.009) {
+        results.push({
+          fromUser: m2,
+          toUser: m1,
+          amount: Math.abs(net),
+          currency,
+        });
+      }
+    }
+  }
+
+  return results;
+}

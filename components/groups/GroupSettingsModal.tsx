@@ -28,6 +28,7 @@ export function GroupSettingsModal({ group, members, isOpen, onClose, onOpenInvi
   const [emoji, setEmoji] = useState(group.emoji || '🏔️');
   const [description, setDescription] = useState(group.description || '');
   const [currency, setCurrency] = useState<CurrencyCode>(group.currency);
+  const [simplifyDebts, setSimplifyDebts] = useState(group.simplify_debts !== false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function GroupSettingsModal({ group, members, isOpen, onClose, onOpenInvi
       setEmoji(group.emoji || '🏔️');
       setDescription(group.description || '');
       setCurrency(group.currency);
+      setSimplifyDebts(group.simplify_debts !== false);
     }
   }, [isOpen, group]);
 
@@ -48,6 +50,7 @@ export function GroupSettingsModal({ group, members, isOpen, onClose, onOpenInvi
       emoji,
       description: description.trim() || null,
       currency,
+      simplify_debts: simplifyDebts,
     });
 
     setSaved(true);
@@ -145,6 +148,37 @@ export function GroupSettingsModal({ group, members, isOpen, onClose, onOpenInvi
                 placeholder="Optional"
                 className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
               />
+            </div>
+          </div>
+
+          {/* Debt Simplification Switch Toggle */}
+          <div className="p-3.5 bg-dark-elevated rounded-2xl border border-dark-border space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold text-white uppercase tracking-wider">
+                  Schulden vereinfachen (Min-Cash-Flow)
+                </div>
+                <div className="text-xs text-gray-400 mt-0.5">
+                  {simplifyDebts
+                    ? 'Aktiviert: Minimiert Transaktionen durch Querverrechnung'
+                    : 'Deaktiviert: Zeigt direkte 1:1 Originalschulden'}
+                </div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={simplifyDebts}
+                onClick={() => setSimplifyDebts(!simplifyDebts)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  simplifyDebts ? 'bg-emerald-600' : 'bg-dark-border'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    simplifyDebts ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
           </div>
 

@@ -97,11 +97,21 @@ export function calculateItemizedSplit(
     };
   });
 
+  // 4. Cent Reconciliation (ensure sum of user splits equals totalAmount to 100% mathematical precision)
+  const roundedGrandTotal = Math.round(grandTotal * 100) / 100;
+  const sumSplits = userSplits.reduce((acc, u) => acc + u.totalOwed, 0);
+  const diffCents = Math.round((roundedGrandTotal - sumSplits) * 100);
+
+  if (diffCents !== 0 && userSplits.length > 0) {
+    const targetUser = userSplits.reduce((prev, curr) => (curr.totalOwed > prev.totalOwed ? curr : prev), userSplits[0]);
+    targetUser.totalOwed = Math.round((targetUser.totalOwed + diffCents / 100) * 100) / 100;
+  }
+
   return {
     itemsSubtotal: Math.round(calculatedItemsSubtotal * 100) / 100,
     tipAmount: Math.round(calculatedTip * 100) / 100,
     serviceChargeAmount: Math.round(calculatedService * 100) / 100,
-    totalAmount: Math.round(grandTotal * 100) / 100,
+    totalAmount: roundedGrandTotal,
     userSplits,
   };
 }
