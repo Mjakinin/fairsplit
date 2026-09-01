@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Group, Profile, Expense, Settlement, ActivityLog, GroupMember, CurrencyCode } from '../types';
 import { calculateUserBalances, simplifyDebts } from '../algorithms/debtSimplification';
 import { formatCurrency } from '../utils/format';
+import { getGroupInviteUrl, ParsedInvitePayload } from '../utils/inviteUrl';
 
 const STORAGE_KEY_GROUPS = 'fairsplit_groups_v2';
 const STORAGE_KEY_MEMBERS = 'fairsplit_members_v2';
@@ -426,6 +427,32 @@ export const FairSplitStore = {
     };
   },
 
+  importGroupFromPayload(payload: ParsedInvitePayload): Group {
+    initStore();
+    let existing = globalGroups.find((g) => g.id === payload.id || g.invite_token.toLowerCase() === payload.invite_token.toLowerCase());
+    if (!existing) {
+      existing = {
+        id: payload.id,
+        name: payload.name,
+        emoji: payload.emoji || '💰',
+        description: payload.description || null,
+        currency: payload.currency || 'EUR',
+        invite_token: payload.invite_token,
+        simplify_debts: true,
+        created_by: 'system',
+        created_at: new Date().toISOString(),
+      };
+      globalGroups = [existing, ...globalGroups];
+      saveToStorage();
+      notify();
+    }
+    const members = globalMembers.filter((m) => m.group_id === existing!.id);
+    return {
+      ...existing,
+      members,
+    };
+  },
+
   createGroup(name: string, description = '', emoji = '💰', currency: CurrencyCode = 'EUR'): Group {
     initStore();
     const currentUser = this.getCurrentUser();
@@ -469,6 +496,16 @@ export const FairSplitStore = {
 
     saveToStorage();
     notify();
+
+    // Sync to serverless memory in background
+    if (typeof window !== 'undefined') {
+      fetch('/api/groups/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newGroup, members: [newMember] }),
+      }).catch(() => {});
+    }
+
     return newGroup;
   },
 
@@ -812,7 +849,7 @@ export const FairSplitStore = {
       }
     }
 
-    summary += `\n🔗 Gruppe beitreten / öffnen: ${typeof window !== 'undefined' ? window.location.origin : ''}/join/${group.invite_token}`;
+    summary += `\n🔗 Gruppe beitreten / öffnen: ${getGroupInviteUrl(group)}`;
     return summary;
   },
 

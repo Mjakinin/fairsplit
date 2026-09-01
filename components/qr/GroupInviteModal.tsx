@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Group } from '@/lib/types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { generateQrDataUrl } from '@/lib/epcQr';
+import { getGroupInviteUrl } from '@/lib/utils/inviteUrl';
 import { QrCode, Copy, Check, Share2, Users } from 'lucide-react';
 
 interface GroupInviteModalProps {
@@ -16,9 +17,7 @@ export function GroupInviteModal({ group, isOpen, onClose }: GroupInviteModalPro
   const [qrUrl, setQrUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
-  const inviteUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/join/${group.invite_token}`
-    : `/join/${group.invite_token}`;
+  const inviteUrl = getGroupInviteUrl(group);
 
   useEffect(() => {
     if (isOpen) {
