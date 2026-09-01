@@ -66,7 +66,44 @@ export async function POST(req: Request) {
 </html>
 `;
 
-    // 1. Check for RESEND_API_KEY (Recommended for Netlify / Vercel)
+    // 1. Check for Standard SMTP first if configured (e.g. Gmail App-Passwort, Strato, IONOS, Brevo - sends to ALL emails worldwide)
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+
+    if (smtpHost && smtpUser && smtpPass) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+        });
+
+        await transporter.sendMail({
+          from: process.env.EMAIL_FROM || `"FairSplit" <${smtpUser}>`,
+          to: email,
+          subject: emailSubject,
+          html: emailHtml,
+        });
+
+        return NextResponse.json({
+          success: true,
+          emailSent: true,
+          provider: 'smtp',
+          code,
+          message: `E-Mail erfolgreich via SMTP an ${email} gesendet!`,
+        });
+      } catch (smtpErr: any) {
+        console.warn('SMTP Fehler:', smtpErr.message);
+      }
+    }
+
+    // 2. Check for RESEND_API_KEY (Recommended for verified domains on Vercel / Netlify)
     const resendApiKey = process.env.RESEND_API_KEY;
     if (resendApiKey) {
       try {
@@ -110,37 +147,6 @@ export async function POST(req: Request) {
           message: `Code generiert.`,
         });
       }
-    }
-
-    // 2. Check for Standard SMTP (Gmail, IONOS, Strato, Sendinblue, etc.)
-    const smtpHost = process.env.SMTP_HOST;
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
-
-    if (smtpHost && smtpUser && smtpPass) {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-      });
-
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM || `"FairSplit" <${smtpUser}>`,
-        to: email,
-        subject: emailSubject,
-        html: emailHtml,
-      });
-
-      return NextResponse.json({
-        success: true,
-        provider: 'smtp',
-        message: `E-Mail erfolgreich via SMTP an ${email} gesendet!`,
-      });
     }
 
     // 3. Fallback for Local Development & Previews without configured keys
